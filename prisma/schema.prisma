@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl: URL directa sin pooler, necesaria para migraciones en Neon.
+  // En desarrollo local podés usar la misma que DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fixtureRequests FixtureRequest[]
+  fixtures        Fixture[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ─── Solicitudes de fixture ───────────────────────────────────────────────────
+
+model FixtureRequest {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quantity  Int           @default(1) // cuántas planillas solicita
+  status    RequestStatus @default(PENDING)
+  note      String?       // nota del usuario al solicitar
+  adminNote String?       // nota del admin al aprobar/rechazar
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  fixtures Fixture[]
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─── Fixture / Planilla ───────────────────────────────────────────────────────
+
+model Fixture {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId String?
+  request   FixtureRequest? @relation(fields: [requestId], references: [id])
+  name      String        // ej: "Mi planilla 1"
+  totalScore Float        @default(0)
+  status    FixtureStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  predictions Prediction[]
+}
+
+enum FixtureStatus {
+  DRAFT      // editando
+  SUBMITTED  // enviado (bloqueado, ya no editable)
+  SCORED     // puntuado (todos los partidos jugados)
+}
+
+// ─── Equipos ──────────────────────────────────────────────────────────────────
+
+model Team {
+  id       String @id @default(cuid())
+  name     String @unique
+  code     String @unique // código 3 letras: ARG, BRA, etc.
+  group    String // "A" .. "L"
+  flag     String // emoji de bandera
+  position Int    @default(0) // posición en el grupo
+
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+}
+
+// ─── Partidos ─────────────────────────────────────────────────────────────────
+
+model Match {
+  id          String   @id @default(cuid())
+  matchNumber Int      @unique
+  phase       Phase
+  groupName   String?  // "A"..."L" si es fase de grupos
+  homeTeamId  String?
+  awayTeamId  String?
+  homeTeam    Team?    @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team?    @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  homeLabel   String?  // para eliminatorias: "Ganador Grupo A"
+  awayLabel   String?
+  scheduledAt DateTime
+  venue       String?
+  city        String?
+
+  // Resultados (cargados por el admin)
+  homeScore      Int?
+  awayScore      Int?
+  firstHalfGoals Int?  // goles totales en el primer tiempo
+  yellowCards    Int?  // tarjetas amarillas totales
+  redCards       Int?  // tarjetas rojas totales
+  played         Boolean @default(false)
+
+  predictions Prediction[]
+}
+
+enum Phase {
+  GROUP
+  ROUND_OF_32
+  ROUND_OF_16
+  QUARTERFINAL
+  SEMIFINAL
+  THIRD_PLACE
+  FINAL
+}
+
+// ─── Predicciones ─────────────────────────────────────────────────────────────
+
+model Prediction {
+  id        String  @id @default(cuid())
+  fixtureId String
+  fixture   Fixture @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  matchId   String
+  match     Match   @relation(fields: [matchId], references: [id])
+
+  // Predicción principal: marcador
+  homeScore Int
+  awayScore Int
+
+  // Extra 1: goles en el primer tiempo (opcional)
+  extraFirstHalfGoals Int?
+
+  // Extra 2: tarjetas (opcional, el usuario elige amarillas o rojas)
+  extraCardsType  CardType? // YELLOW o RED
+  extraCardsValue Int?
+
+  // Puntos calculados
+  points Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fixtureId, matchId])
+}
+
+enum CardType {
+  YELLOW
+  RED
+}
+
+// ─── Premios ──────────────────────────────────────────────────────────────────
+
+model Prize {
+  id          String  @id @default(cuid())
+  position    Int     @unique // 1..10
+  description String  // ej: "Camiseta oficial Argentina"
+  value       String? // ej: "$5000"
+  emoji       String  @default("🏆")
+}

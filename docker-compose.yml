@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mundial2026
+      POSTGRES_USER: mundial
+      POSTGRES_PASSWORD: mundial2026pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mundial -d mundial2026"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://mundial:mundial2026pass@db:5432/mundial2026"
+      DIRECT_URL: "postgresql://mundial:mundial2026pass@db:5432/mundial2026"
+      JWT_SECRET: "cambia-esto-por-una-clave-muy-larga-y-aleatoria-en-produccion"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

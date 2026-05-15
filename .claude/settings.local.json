@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\\\(auth\\)\\\\login\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\\\(auth\\)\\\\register\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\dashboard\\\\fixtures\\\\[id]\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\admin\\\\fixtures\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\admin\\\\matches\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\admin\\\\prizes\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\admin\\\\users\" && mkdir -p \"C:\\\\proyectos\\\\Mundial2026\\\\app\\\\ranking\" && echo \"dirs ok\")",
+      "PowerShell(Set-Location \"C:\\\\proyectos\\\\Mundial2026\"; $env:DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\"; $env:DIRECT_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\"; $env:JWT_SECRET=\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"; npm run build 2>&1 | Select-Object -Last 30)"
+    ]
+  }
+}
