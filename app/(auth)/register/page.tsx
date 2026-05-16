@@ -8,12 +8,18 @@ import { Spinner } from '@/components/ui/Spinner'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Solo permite números, espacios y guiones en el teléfono
+  function handlePhone(value: string) {
+    const cleaned = value.replace(/[^\d\s\-]/g, '')
+    update('phone', cleaned)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -29,12 +35,24 @@ export default function RegisterPage() {
       return
     }
 
+    // Validar teléfono: mínimo 8 dígitos
+    const digits = form.phone.replace(/\D/g, '')
+    if (digits.length < 8) {
+      setError('Ingresá un número de teléfono válido')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: `+54 ${form.phone.trim()}`,
+          password: form.password,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
@@ -62,23 +80,18 @@ export default function RegisterPage() {
             <div>
               <label className="label" htmlFor="name">Nombre completo</label>
               <input
-                id="name"
-                type="text"
-                className="input"
+                id="name" type="text" className="input"
                 placeholder="Juan Pérez"
                 value={form.name}
                 onChange={e => update('name', e.target.value)}
-                required
-                minLength={2}
+                required minLength={2}
               />
             </div>
 
             <div>
               <label className="label" htmlFor="email">Email</label>
               <input
-                id="email"
-                type="email"
-                className="input"
+                id="email" type="email" className="input"
                 placeholder="tu@email.com"
                 value={form.email}
                 onChange={e => update('email', e.target.value)}
@@ -86,26 +99,45 @@ export default function RegisterPage() {
               />
             </div>
 
+            {/* Teléfono con prefijo +54 fijo */}
+            <div>
+              <label className="label" htmlFor="phone">
+                Celular
+                <span className="text-slate-500 font-normal ml-1">(para contacto en caso de ganar)</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="flex items-center bg-slate-700 border border-slate-600 rounded-lg px-3 text-slate-300 font-mono text-sm shrink-0 select-none">
+                  🇦🇷 +54
+                </div>
+                <input
+                  id="phone" type="tel" className="input"
+                  placeholder="11 1234-5678"
+                  value={form.phone}
+                  onChange={e => handlePhone(e.target.value)}
+                  required
+                  maxLength={15}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Ej: 11 1234-5678 · 351 234-5678 · 0221 15-123-4567
+              </p>
+            </div>
+
             <div>
               <label className="label" htmlFor="password">Contraseña</label>
               <input
-                id="password"
-                type="password"
-                className="input"
+                id="password" type="password" className="input"
                 placeholder="Mínimo 6 caracteres"
                 value={form.password}
                 onChange={e => update('password', e.target.value)}
-                required
-                minLength={6}
+                required minLength={6}
               />
             </div>
 
             <div>
               <label className="label" htmlFor="confirm">Confirmar contraseña</label>
               <input
-                id="confirm"
-                type="password"
-                className="input"
+                id="confirm" type="password" className="input"
                 placeholder="Repetí la contraseña"
                 value={form.confirm}
                 onChange={e => update('confirm', e.target.value)}

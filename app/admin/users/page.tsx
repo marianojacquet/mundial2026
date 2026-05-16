@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
     where: { role: 'USER' },
     select: {
-      id: true, name: true, email: true, createdAt: true,
+      id: true, name: true, email: true, phone: true, createdAt: true,
       _count: { select: { fixtures: true, fixtureRequests: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -31,6 +31,7 @@ export default async function AdminUsersPage() {
             <tr>
               <th className="table-header text-left">Usuario</th>
               <th className="table-header text-left">Email</th>
+              <th className="table-header text-left">Teléfono</th>
               <th className="table-header text-center">Planillas</th>
               <th className="table-header text-center">Solicitudes</th>
               <th className="table-header text-left">Registro</th>
@@ -41,6 +42,7 @@ export default async function AdminUsersPage() {
               <tr key={u.id} className="hover:bg-slate-700/30 transition-colors">
                 <td className="table-cell font-medium">{u.name}</td>
                 <td className="table-cell text-slate-400">{u.email}</td>
+                <td className="table-cell text-slate-400 text-sm">{u.phone ?? <span className="text-slate-600">—</span>}</td>
                 <td className="table-cell text-center">
                   <span className="badge bg-sky-900/50 text-sky-300 border border-sky-700">{u._count.fixtures}</span>
                 </td>
@@ -52,7 +54,7 @@ export default async function AdminUsersPage() {
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="table-cell text-center text-slate-400 py-10">
+                <td colSpan={6} className="table-cell text-center text-slate-400 py-10">
                   No hay usuarios registrados todavía.
                 </td>
               </tr>

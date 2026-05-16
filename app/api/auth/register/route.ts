@@ -10,6 +10,7 @@ const schema = z.object({
   name:     z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email:    z.string().email('Email invalido'),
   password: z.string().min(6, 'La contrasena debe tener al menos 6 caracteres'),
+  phone:    z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 })
     }
 
-    const { name, email, password } = parsed.data
+    const { name, email, password, phone } = parsed.data
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const hashed = await bcrypt.hash(password, 12)
     const user = await prisma.user.create({
-      data: { name, email, password: hashed },
+      data: { name, email, password: hashed, phone: phone ?? null },
     })
 
     const token = await signToken({ sub: user.id, email: user.email, name: user.name, role: user.role })
