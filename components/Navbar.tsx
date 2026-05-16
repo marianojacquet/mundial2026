@@ -28,7 +28,8 @@ export default function Navbar() {
   const navLinks = user
     ? [
         { href: '/dashboard', label: 'Mis Fixtures' },
-        { href: '/ranking', label: 'Ranking' },
+        { href: '/groups',    label: 'Mis Grupos' },
+        { href: '/ranking',   label: 'Ranking' },
         ...(user.role === 'ADMIN'
           ? [{ href: '/admin', label: 'Administración' }]
           : []),

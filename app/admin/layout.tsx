@@ -2,11 +2,12 @@ import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 
 const adminLinks = [
-  { href: '/admin', label: '📊 Dashboard', exact: true },
+  { href: '/admin',          label: '📊 Dashboard' },
   { href: '/admin/fixtures', label: '📋 Solicitudes' },
-  { href: '/admin/matches', label: '⚽ Resultados' },
-  { href: '/admin/prizes', label: '🏆 Premios' },
-  { href: '/admin/users', label: '👥 Usuarios' },
+  { href: '/admin/matches',  label: '⚽ Resultados' },
+  { href: '/admin/groups',   label: '👥 Grupos' },
+  { href: '/admin/prizes',   label: '🏆 Premios' },
+  { href: '/admin/users',    label: '🧑 Usuarios' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

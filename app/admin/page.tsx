@@ -47,10 +47,11 @@ export default async function AdminPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { href: '/admin/fixtures', icon: '📋', title: 'Gestionar solicitudes', desc: 'Aprobá o rechazá las solicitudes de planillas' },
-            { href: '/admin/matches', icon: '⚽', title: 'Cargar resultados', desc: 'Ingresá los resultados de los partidos jugados' },
-            { href: '/admin/prizes', icon: '🏆', title: 'Configurar premios', desc: 'Definí los premios para el ranking final' },
-            { href: '/admin/users', icon: '👥', title: 'Gestionar usuarios', desc: 'Veé todos los usuarios registrados' },
-            { href: '/ranking', icon: '📊', title: 'Ver ranking', desc: 'Mirá el ranking público actual' },
+            { href: '/admin/matches',  icon: '⚽', title: 'Cargar resultados',     desc: 'Ingresá los resultados de los partidos jugados' },
+            { href: '/admin/groups',   icon: '👥', title: 'Gestionar grupos',      desc: 'Creá grupos y asigná participantes para competir entre sí' },
+            { href: '/admin/prizes',   icon: '🏆', title: 'Configurar premios',    desc: 'Definí los premios para el ranking final' },
+            { href: '/admin/users',    icon: '🧑', title: 'Gestionar usuarios',    desc: 'Veé todos los usuarios registrados' },
+            { href: '/ranking',        icon: '📊', title: 'Ver ranking',            desc: 'Mirá el ranking público actual' },
           ].map(item => (
             <a key={item.href} href={item.href} className="card hover:border-sky-600 transition-colors group">
               <div className="text-3xl mb-2">{item.icon}</div>

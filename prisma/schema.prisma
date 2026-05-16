@@ -24,6 +24,7 @@ model User {
 
   fixtureRequests FixtureRequest[]
   fixtures        Fixture[]
+  groupMemberships GroupMember[]
 }
 
 enum Role {
@@ -160,6 +161,29 @@ model Prediction {
 enum CardType {
   YELLOW
   RED
+}
+
+// ─── Grupos de competencia ────────────────────────────────────────────────────
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members GroupMember[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
 }
 
 // ─── Premios ──────────────────────────────────────────────────────────────────
