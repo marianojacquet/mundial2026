@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth'
-import { sendApprovalEmail, sendRejectionEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,10 +40,7 @@ export async function PATCH(req: NextRequest) {
 
   const { requestId, action, adminNote } = parsed.data
 
-  const fixtureRequest = await prisma.fixtureRequest.findUnique({
-    where: { id: requestId },
-    include: { user: { select: { name: true, email: true } } },
-  })
+  const fixtureRequest = await prisma.fixtureRequest.findUnique({ where: { id: requestId } })
   if (!fixtureRequest) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 })
 
   if (fixtureRequest.status !== 'PENDING') {
@@ -54,7 +50,7 @@ export async function PATCH(req: NextRequest) {
   const updated = await prisma.fixtureRequest.update({
     where: { id: requestId },
     data: {
-      status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+      status:    action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
       adminNote: adminNote ?? null,
     },
   })
@@ -66,23 +62,6 @@ export async function PATCH(req: NextRequest) {
       name:      `Planilla ${i + 1}`,
     }))
     await prisma.fixture.createMany({ data: fixtures })
-
-    // Enviar email de aprobacion (sin bloquear la respuesta)
-    sendApprovalEmail({
-      to:           fixtureRequest.user.email,
-      userName:     fixtureRequest.user.name,
-      quantity:     fixtureRequest.quantity,
-      fixtureNames: fixtures.map(f => f.name),
-      adminNote:    adminNote,
-    }).catch(err => console.error('Email aprobacion error:', err))
-  } else {
-    // Enviar email de rechazo (sin bloquear la respuesta)
-    sendRejectionEmail({
-      to:        fixtureRequest.user.email,
-      userName:  fixtureRequest.user.name,
-      quantity:  fixtureRequest.quantity,
-      adminNote: adminNote,
-    }).catch(err => console.error('Email rechazo error:', err))
   }
 
   return NextResponse.json({ request: updated })
