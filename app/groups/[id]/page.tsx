@@ -8,22 +8,22 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
 
 type RankingEntry = {
-  position: number
-  userId: string
-  userName: string
-  fixtureName: string
-  fixtureId: string | null
-  totalScore: number
+  position:      number
+  userId:        string
+  userName:      string
+  fixtureName:   string
+  fixtureId:     string | null
+  totalScore:    number
   isCurrentUser: boolean
 }
 
 type Group = {
-  id: string
-  name: string
+  id:           string
+  name:         string
   description?: string
 }
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const MEDALS        = ['🥇', '🥈', '🥉']
 const PODIUM_COLORS = [
   'from-yellow-700 to-yellow-500',
   'from-slate-600 to-slate-400',
@@ -33,10 +33,10 @@ const SCORE_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-500']
 
 export default function GroupRankingPage() {
   const { id } = useParams<{ id: string }>()
-  const [group, setGroup]     = useState<Group | null>(null)
+  const [group,   setGroup]   = useState<Group | null>(null)
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState('')
+  const [error,   setError]   = useState('')
 
   useEffect(() => {
     fetch(`/api/groups/${id}`)
@@ -70,7 +70,7 @@ export default function GroupRankingPage() {
               <div className="text-5xl mb-3">👥</div>
               <h1 className="text-3xl font-extrabold">{group?.name}</h1>
               {group?.description && <p className="text-slate-400 mt-2">{group.description}</p>}
-              <p className="text-slate-500 text-sm mt-1">{ranking.length} participantes</p>
+              <p className="text-slate-500 text-sm mt-1">{ranking.length} planilla{ranking.length !== 1 ? 's' : ''} en competencia</p>
             </div>
 
             {/* Podio Top 3 */}
@@ -82,14 +82,19 @@ export default function GroupRankingPage() {
                   const rank    = idx + 1
                   const heights = ['h-28', 'h-36', 'h-20']
                   return (
-                    <div key={entry.userId}
+                    <div key={`${entry.userId}-${entry.fixtureName}-${idx}`}
                       className={`flex flex-col items-center ${idx === 0 ? 'order-2' : idx === 1 ? 'order-1' : 'order-3'}`}>
                       <div className="text-3xl mb-1">{MEDALS[rank - 1]}</div>
                       <p className={`font-bold text-sm text-center max-w-[80px] truncate
                         ${entry.isCurrentUser ? 'text-sky-400' : 'text-white'}`}>
                         {entry.isCurrentUser ? 'Vos' : entry.userName}
                       </p>
-                      <p className="text-xs text-slate-400 mb-2">{entry.totalScore.toFixed(1)} pts</p>
+                      <p className="text-xs text-slate-500 mb-1 max-w-[80px] truncate text-center">
+                        {entry.fixtureName}
+                      </p>
+                      <p className={`text-sm font-extrabold mb-2 ${SCORE_COLORS[rank - 1]}`}>
+                        {entry.totalScore.toFixed(1)} pts
+                      </p>
                       <div className={`${heights[rank - 1]} w-20 bg-gradient-to-t ${PODIUM_COLORS[rank - 1]}
                         rounded-t-lg flex items-start justify-center pt-2`}>
                         <span className={`text-xl font-extrabold ${SCORE_COLORS[rank - 1]}`}>#{rank}</span>
@@ -102,74 +107,96 @@ export default function GroupRankingPage() {
 
             {/* Tabla completa */}
             <div className="card overflow-hidden p-0">
-              <div className="px-5 py-4 border-b border-slate-700">
-                <h2 className="font-bold text-lg">Ranking del grupo</h2>
+              <div className="px-5 py-4 border-b border-slate-700 flex items-center gap-3">
+                <h2 className="font-bold text-lg flex-1">Ranking del grupo</h2>
+                <span className="text-xs text-slate-500 bg-slate-800 border border-slate-700 rounded-full px-3 py-1">
+                  cada planilla compite por separado
+                </span>
               </div>
               <table className="w-full">
                 <thead className="bg-slate-900/50 border-b border-slate-700">
                   <tr>
                     <th className="table-header text-center w-12">#</th>
                     <th className="table-header text-left">Participante</th>
-                    <th className="table-header text-left hidden sm:table-cell">Mejor planilla</th>
+                    <th className="table-header text-left hidden sm:table-cell">Planilla</th>
                     <th className="table-header text-right">Puntaje</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700">
-                  {ranking.map(entry => (
-                    <tr key={entry.userId}
-                      className={`transition-colors
-                        ${entry.isCurrentUser ? 'bg-sky-950/30' : 'hover:bg-slate-700/20'}`}>
-                      <td className="table-cell text-center">
-                        {entry.position <= 3
-                          ? <span className="text-lg">{MEDALS[entry.position - 1]}</span>
-                          : <span className="text-slate-400 font-mono">#{entry.position}</span>}
-                      </td>
-                      <td className="table-cell">
-                        <span className={`font-medium ${entry.isCurrentUser ? 'text-sky-400' : ''}`}>
-                          {entry.userName}
-                          {entry.isCurrentUser && <span className="ml-2 text-xs text-sky-500">(vos)</span>}
-                        </span>
-                      </td>
-                      <td className="table-cell text-slate-400 text-sm hidden sm:table-cell">
-                        {entry.fixtureId
-                          ? <Link href={`/dashboard/fixtures/${entry.fixtureId}`}
-                              className="hover:text-sky-400 transition-colors">
-                              {entry.fixtureName}
-                            </Link>
-                          : <span className="text-slate-600">Sin planilla enviada</span>}
-                      </td>
-                      <td className="table-cell text-right">
-                        <span className={`font-bold text-lg
-                          ${entry.position === 1 ? 'text-yellow-400'
-                          : entry.position === 2 ? 'text-slate-300'
-                          : entry.position === 3 ? 'text-amber-500'
-                          : 'text-sky-400'}`}>
-                          {entry.totalScore.toFixed(1)}
-                        </span>
+                  {ranking.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="table-cell text-center text-slate-400 py-10">
+                        Ningún miembro ha enviado planillas todavía.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    ranking.map((entry, i) => (
+                      <tr key={`${entry.fixtureId ?? entry.userId}-${i}`}
+                        className={`transition-colors
+                          ${entry.isCurrentUser ? 'bg-sky-950/30' : 'hover:bg-slate-700/20'}`}>
+                        <td className="table-cell text-center">
+                          {entry.position <= 3
+                            ? <span className="text-lg">{MEDALS[entry.position - 1]}</span>
+                            : <span className={`font-mono font-bold ${entry.position <= 10 ? 'text-sky-400' : 'text-slate-500'}`}>
+                                #{entry.position}
+                              </span>}
+                        </td>
+                        <td className="table-cell">
+                          <span className={`font-medium ${entry.isCurrentUser ? 'text-sky-400' : ''}`}>
+                            {entry.userName}
+                            {entry.isCurrentUser && <span className="ml-2 text-xs text-sky-500">(vos)</span>}
+                          </span>
+                        </td>
+                        <td className="table-cell text-slate-400 text-sm hidden sm:table-cell">
+                          {entry.fixtureId
+                            ? <Link href={`/dashboard/fixtures/${entry.fixtureId}`}
+                                className="hover:text-sky-400 transition-colors">
+                                {entry.fixtureName}
+                              </Link>
+                            : <span className="text-slate-600">—</span>}
+                        </td>
+                        <td className="table-cell text-right">
+                          <span className={`font-bold text-lg
+                            ${entry.position === 1 ? 'text-yellow-400'
+                            : entry.position === 2 ? 'text-slate-300'
+                            : entry.position === 3 ? 'text-amber-500'
+                            : entry.position <= 10 ? 'text-sky-400'
+                            : 'text-slate-300'}`}>
+                            {entry.totalScore.toFixed(1)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
-            {/* Leyenda Top 3 */}
+            {/* Top 3 del grupo */}
             {ranking.length >= 3 && (
               <div className="mt-6 card">
                 <h3 className="font-semibold mb-3">🏆 Top 3 del grupo</h3>
                 <div className="space-y-2">
                   {ranking.slice(0, 3).map((e, i) => (
-                    <div key={e.userId} className="flex items-center gap-3">
+                    <div key={`top3-${e.fixtureId ?? e.userId}-${i}`} className="flex items-center gap-3">
                       <span className="text-xl">{MEDALS[i]}</span>
-                      <span className={`font-medium ${e.isCurrentUser ? 'text-sky-400' : 'text-white'}`}>
-                        {e.userName}
-                      </span>
-                      <span className="text-slate-400 text-sm ml-auto">{e.totalScore.toFixed(1)} pts</span>
+                      <div className="flex-1 min-w-0">
+                        <span className={`font-medium ${e.isCurrentUser ? 'text-sky-400' : 'text-white'}`}>
+                          {e.userName}
+                        </span>
+                        <span className="text-slate-500 text-xs ml-2">{e.fixtureName}</span>
+                      </div>
+                      <span className="text-slate-400 text-sm">{e.totalScore.toFixed(1)} pts</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            <p className="text-center text-slate-600 text-xs mt-4">
+              Cada planilla compite de forma independiente. Un participante puede tener
+              varias planillas en distintas posiciones.
+            </p>
           </>
         )}
       </main>

@@ -27,8 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const memberIds = group.members.map(m => m.userId)
 
-  // Traemos TODOS los fixtures de los miembros, sin límite,
-  // ordenados por puntaje desc para que el primero de cada usuario sea el mejor.
+  // Cada planilla compite individualmente — sin deduplicar por usuario
   const fixtures = await prisma.fixture.findMany({
     where: {
       userId: { in: memberIds },
@@ -38,40 +37,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     orderBy: { totalScore: 'desc' },
   })
 
-  // Una entrada por usuario: su mejor planilla (primera al estar ordenado desc)
-  const byUser = new Map<string, typeof fixtures[0]>()
-  for (const f of fixtures) {
-    if (!byUser.has(f.userId)) byUser.set(f.userId, f)
-  }
-
-  // Incluir miembros sin planilla enviada (0 puntos)
-  for (const m of group.members) {
-    if (!byUser.has(m.userId)) {
-      byUser.set(m.userId, {
-        id:        '',
-        userId:    m.userId,
-        user:      m.user,
-        name:      '-',
-        totalScore: 0,
-        status:    'DRAFT',
-        requestId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as typeof fixtures[0])
-    }
-  }
-
-  const ranking = Array.from(byUser.values())
-    .sort((a, b) => b.totalScore - a.totalScore)
-    .map((f, i) => ({
-      position:      i + 1,
-      userId:        f.userId,
-      userName:      f.user.name,
-      fixtureName:   f.name,
-      fixtureId:     f.id || null,
-      totalScore:    f.totalScore,
-      isCurrentUser: f.userId === session.sub,
-    }))
+  const ranking = fixtures.map((f, i) => ({
+    position:      i + 1,
+    userId:        f.userId,
+    userName:      f.user.name,
+    fixtureName:   f.name,
+    fixtureId:     f.id,
+    totalScore:    f.totalScore,
+    isCurrentUser: f.userId === session.sub,
+  }))
 
   return NextResponse.json({ group, ranking })
 }

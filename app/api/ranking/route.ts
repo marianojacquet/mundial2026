@@ -4,9 +4,8 @@ import { prisma } from '@/lib/db'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  // Traemos TODOS los fixtures enviados/puntuados, sin límite,
-  // ordenados por puntaje desc. Así el primero de cada usuario = el mejor.
-  const allFixtures = await prisma.fixture.findMany({
+  // Cada planilla compite individualmente — sin deduplicar por usuario
+  const fixtures = await prisma.fixture.findMany({
     where: { status: { in: ['SUBMITTED', 'SCORED'] } },
     include: {
       user: { select: { id: true, name: true } },
@@ -14,19 +13,9 @@ export async function GET() {
     orderBy: { totalScore: 'desc' },
   })
 
-  // Una entrada por usuario: su mejor planilla (la primera al estar ordenado desc)
-  const byUser = new Map<string, typeof allFixtures[0]>()
-  for (const f of allFixtures) {
-    if (!byUser.has(f.userId)) byUser.set(f.userId, f)
-  }
-
-  // Ordenar usuarios por mejor puntaje
-  const rankingByUser = Array.from(byUser.values())
-    .sort((a, b) => b.totalScore - a.totalScore)
-
   const prizes = await prisma.prize.findMany({ orderBy: { position: 'asc' } })
 
-  const ranking = rankingByUser.map((f, i) => ({
+  const ranking = fixtures.map((f, i) => ({
     position:    i + 1,
     userId:      f.userId,
     userName:    f.user.name,

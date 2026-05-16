@@ -6,26 +6,15 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 async function getRanking() {
-  // Traemos TODOS los fixtures enviados/puntuados, sin límite,
-  // ordenados por puntaje desc para que el primero de cada usuario sea el mejor.
-  const allFixtures = await prisma.fixture.findMany({
+  // Cada planilla compite individualmente, ordenadas por puntaje
+  const ranking = await prisma.fixture.findMany({
     where: { status: { in: ['SUBMITTED', 'SCORED'] } },
     include: { user: { select: { id: true, name: true } } },
     orderBy: { totalScore: 'desc' },
   })
 
-  // Una entrada por usuario: su mejor planilla (primera al estar ordenado desc)
-  const byUser = new Map<string, typeof allFixtures[0]>()
-  for (const f of allFixtures) {
-    if (!byUser.has(f.userId)) byUser.set(f.userId, f)
-  }
-
-  // Lista final: un usuario, su mejor planilla, ordenado por puntaje
-  const ranking = Array.from(byUser.values())
-    .sort((a, b) => b.totalScore - a.totalScore)
-
-  const prizes       = await prisma.prize.findMany({ orderBy: { position: 'asc' } })
-  const totalMatches = await prisma.match.count()
+  const prizes        = await prisma.prize.findMany({ orderBy: { position: 'asc' } })
+  const totalMatches  = await prisma.match.count()
   const playedMatches = await prisma.match.count({ where: { played: true } })
 
   return { ranking, prizes, totalMatches, playedMatches }
@@ -50,7 +39,7 @@ export default async function RankingPage() {
         <div className="text-center mb-10">
           <h1 className="text-4xl font-extrabold mb-2">🏆 Ranking Mundial 2026</h1>
           <p className="text-slate-400 mb-1">
-            {ranking.length} participante{ranking.length !== 1 ? 's' : ''} · cada uno con su mejor planilla
+            {ranking.length} planilla{ranking.length !== 1 ? 's' : ''} en competencia
           </p>
           <p className="text-slate-500 text-sm mb-3">
             Progreso del torneo: {playedMatches}/{totalMatches} partidos jugados ({progress}%)
@@ -74,7 +63,6 @@ export default async function RankingPage() {
             {/* ── Podio Top 3 ─────────────────────────────────────────────── */}
             {top3.length >= 2 && (
               <div className="flex justify-center items-end gap-4 mb-10">
-                {/* Orden visual: 2° | 1° | 3° */}
                 {[1, 0, 2].map(idx => {
                   const entry = top3[idx]
                   if (!entry) return null
@@ -87,7 +75,7 @@ export default async function RankingPage() {
                     >
                       <div className="text-3xl mb-1">{MEDALS[rank - 1]}</div>
                       <p className="font-bold text-sm text-center max-w-[90px] truncate">{entry.user.name}</p>
-                      <p className="text-xs text-slate-400 mb-1">{entry.name}</p>
+                      <p className="text-xs text-slate-400 mb-1 max-w-[90px] truncate">{entry.name}</p>
                       <p className={`text-lg font-extrabold mb-2 ${POSITION_COLORS[rank - 1]}`}>
                         {entry.totalScore.toFixed(1)} pts
                       </p>
@@ -110,12 +98,12 @@ export default async function RankingPage() {
               </div>
             )}
 
-            {/* ── Tabla completa: UN usuario = UNA fila = su mejor planilla ── */}
+            {/* ── Tabla completa ───────────────────────────────────────────── */}
             <div className="card overflow-hidden p-0">
               <div className="px-5 py-4 border-b border-slate-700 flex items-center gap-3">
                 <h2 className="font-bold text-lg flex-1">Ranking general</h2>
                 <span className="text-xs text-slate-500 bg-slate-800 border border-slate-700 rounded-full px-3 py-1">
-                  1 fila por participante · mejor planilla
+                  cada planilla compite por separado
                 </span>
               </div>
               <table className="w-full">
@@ -123,7 +111,7 @@ export default async function RankingPage() {
                   <tr>
                     <th className="table-header text-center w-14">#</th>
                     <th className="table-header text-left">Participante</th>
-                    <th className="table-header text-left hidden sm:table-cell">Mejor planilla</th>
+                    <th className="table-header text-left hidden sm:table-cell">Planilla</th>
                     <th className="table-header text-right">Puntaje</th>
                     <th className="table-header text-left hidden md:table-cell">Premio</th>
                   </tr>
@@ -175,10 +163,9 @@ export default async function RankingPage() {
               </table>
             </div>
 
-            {/* Nota explicativa */}
             <p className="text-center text-slate-600 text-xs mt-4">
-              Si un participante tiene más de una planilla, solo se muestra la de mayor puntaje.
-              El ranking se actualiza automáticamente a medida que avanza el torneo.
+              Cada planilla compite de forma independiente. Un mismo participante puede tener
+              varias planillas en distintas posiciones del ranking.
             </p>
           </>
         )}
