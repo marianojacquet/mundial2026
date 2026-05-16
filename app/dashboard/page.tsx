@@ -15,11 +15,13 @@ type Fixture = {
   id: string; name: string; status: string; totalScore: number; createdAt: string
   _count: { predictions: number }
 }
+type RankingPos = { fixtureId: string; position: number; total: number }
 
 export default function DashboardPage() {
-  const [requests, setRequests] = useState<FixtureRequest[]>([])
-  const [fixtures, setFixtures] = useState<Fixture[]>([])
-  const [loading, setLoading] = useState(true)
+  const [requests,    setRequests]    = useState<FixtureRequest[]>([])
+  const [fixtures,    setFixtures]    = useState<Fixture[]>([])
+  const [rankingPos,  setRankingPos]  = useState<RankingPos[]>([])
+  const [loading,     setLoading]     = useState(true)
   const [reqModal, setReqModal] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [note, setNote] = useState('')
@@ -28,14 +30,21 @@ export default function DashboardPage() {
 
   async function load() {
     setLoading(true)
-    const fRes = await fetch('/api/fixtures')
-    const fData = await fRes.json()
+    const [fRes, rRes, rpRes] = await Promise.all([
+      fetch('/api/fixtures'),
+      fetch('/api/requests'),
+      fetch('/api/ranking/me'),
+    ])
+    const fData  = await fRes.json()
     setFixtures(fData.fixtures ?? [])
 
-    const rRes = await fetch('/api/requests')
     if (rRes.ok) {
       const rData = await rRes.json()
       setRequests(rData.requests ?? [])
+    }
+    if (rpRes.ok) {
+      const rpData = await rpRes.json()
+      setRankingPos(rpData.positions ?? [])
     }
     setLoading(false)
   }
@@ -97,20 +106,43 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {fixtures.map(f => (
-                    <Link key={f.id} href={`/dashboard/fixtures/${f.id}`}
-                      className="card hover:border-sky-600 transition-colors group">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-semibold group-hover:text-sky-400 transition-colors">{f.name}</h3>
-                        <span className={statusBadge[f.status] ?? 'badge'}>{statusLabel(f.status)}</span>
-                      </div>
-                      <div className="text-sm text-slate-400 space-y-1">
-                        <p>Predicciones guardadas: <span className="text-white">{f._count.predictions}</span></p>
-                        <p>Puntaje actual: <span className="text-sky-400 font-bold">{f.totalScore.toFixed(1)} pts</span></p>
-                        <p>Creada: {formatDate(f.createdAt)}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {fixtures.map(f => {
+                    const rp = rankingPos.find(r => r.fixtureId === f.id)
+                    return (
+                      <Link key={f.id} href={`/dashboard/fixtures/${f.id}`}
+                        className="card hover:border-sky-600 transition-colors group">
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="font-semibold group-hover:text-sky-400 transition-colors">{f.name}</h3>
+                          <span className={statusBadge[f.status] ?? 'badge'}>{statusLabel(f.status)}</span>
+                        </div>
+                        <div className="text-sm text-slate-400 space-y-1">
+                          <p>Predicciones guardadas: <span className="text-white">{f._count.predictions}</span></p>
+                          <p>Puntaje actual: <span className="text-sky-400 font-bold">{f.totalScore.toFixed(1)} pts</span></p>
+                          <p>Creada: {formatDate(f.createdAt)}</p>
+                        </div>
+                        {/* Posicion en el ranking */}
+                        {rp && (
+                          <div className={`mt-3 pt-3 border-t border-slate-700 flex items-center gap-2
+                            ${rp.position === 1 ? 'text-yellow-400'
+                            : rp.position === 2 ? 'text-slate-300'
+                            : rp.position === 3 ? 'text-amber-500'
+                            : rp.position <= 10 ? 'text-sky-400'
+                            : 'text-slate-400'}`}>
+                            <span className="text-lg">
+                              {rp.position === 1 ? '🥇' : rp.position === 2 ? '🥈' : rp.position === 3 ? '🥉' : '🏅'}
+                            </span>
+                            <span className="font-bold">#{rp.position}</span>
+                            <span className="text-slate-500 text-xs">de {rp.total} planillas</span>
+                          </div>
+                        )}
+                        {f.status === 'DRAFT' && (
+                          <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-500">
+                            Enviá la planilla para participar en el ranking
+                          </div>
+                        )}
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </section>
