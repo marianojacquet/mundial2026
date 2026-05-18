@@ -1,7 +1,6 @@
 import Navbar from '@/components/Navbar'
 import { prisma } from '@/lib/db'
 import Link from 'next/link'
-import { calcPozoGeneral, formatPesos } from '@/lib/prizes'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
@@ -22,9 +21,8 @@ async function getRanking() {
 export default async function RankingPage() {
   const { ranking, totalMatches, playedMatches } = await getRanking()
 
-  const progress    = totalMatches > 0 ? Math.round((playedMatches / totalMatches) * 100) : 0
-  const pozoGeneral = calcPozoGeneral(ranking.length)
-  const winner      = ranking[0] ?? null
+  const progress = totalMatches > 0 ? Math.round((playedMatches / totalMatches) * 100) : 0
+  const winner   = ranking[0] ?? null
 
   return (
     <>
@@ -61,11 +59,11 @@ export default async function RankingPage() {
                             border-2 border-yellow-500/50 rounded-2xl p-6 mb-8 text-center
                             shadow-lg shadow-yellow-900/20">
               <p className="text-yellow-300 text-sm font-semibold uppercase tracking-widest mb-1">
-                Premio acumulado — 1 solo ganador
+                🏆 Hay un pozo en juego
               </p>
-              <p className="text-6xl font-black text-yellow-400">{formatPesos(pozoGeneral)}</p>
-              <p className="text-yellow-700 text-sm mt-2">
-                {ranking.length} planillas × {formatPesos(800)} · crece con cada nueva inscripción
+              <p className="text-3xl font-black text-white">El ganador se lleva todo</p>
+              <p className="text-yellow-600 text-sm mt-2">
+                {ranking.length} planilla{ranking.length !== 1 ? 's' : ''} inscripta{ranking.length !== 1 ? 's' : ''} · cuantas más entren, más grande el pozo
               </p>
             </div>
 
@@ -89,9 +87,7 @@ export default async function RankingPage() {
                     <p className="text-4xl font-extrabold text-yellow-400">{winner.totalScore.toFixed(1)}</p>
                     <p className="text-yellow-600 text-sm">puntos</p>
                     {progress === 100 && (
-                      <p className="text-emerald-400 font-bold text-sm mt-1">
-                        Gana {formatPesos(pozoGeneral)}
-                      </p>
+                      <p className="text-emerald-400 font-bold text-sm mt-1">¡Ganador del torneo!</p>
                     )}
                   </div>
                 </div>
@@ -150,8 +146,7 @@ export default async function RankingPage() {
             </div>
 
             <p className="text-center text-slate-600 text-xs mt-4">
-              El ranking se actualiza automáticamente con cada resultado cargado.
-              Al finalizar el torneo, el puesto #1 gana {formatPesos(pozoGeneral)}.
+              El ranking se actualiza con cada resultado. Al finalizar el torneo, el puesto #1 se lleva el pozo.
             </p>
           </>
         )}

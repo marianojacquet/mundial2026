@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { prisma } from '@/lib/db'
-import { calcPozoGeneral, calcPozoGrupo, formatPesos, PRECIO_PLANILLA } from '@/lib/prizes'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +18,6 @@ async function getStats() {
 
 export default async function Home() {
   const { users, fixtures } = await getStats()
-  const pozoGeneral = calcPozoGeneral(fixtures)
 
   return (
     <>
@@ -66,30 +64,35 @@ export default async function Home() {
             <p className="text-2xl md:text-3xl font-bold text-white mb-3">
               ⚽ Fixture & Predicciones
             </p>
-            <p className="text-slate-300 text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
-              Predecí los resultados de los <strong className="text-white">104 partidos</strong>,
-              competí con amigos y ganá premios reales.
-              <strong className="text-yellow-400"> El que más acierte se lleva todo.</strong>
+            <p className="text-slate-300 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+              Predecí los resultados de los <strong className="text-white">104 partidos</strong> del Mundial.
+              Hay un pozo en juego y <strong className="text-yellow-400">el que más acierte se lleva todo</strong>.
+              Cuantos más se sumen, más grande es el pozo.
             </p>
 
-            {/* Pozo acumulado — el gran atractivo */}
-            {fixtures > 0 && (
-              <div className="inline-block mb-10">
-                <div className="relative bg-gradient-to-br from-yellow-500/20 to-amber-600/20
-                                border-2 border-yellow-500/50 rounded-2xl px-8 py-5
-                                shadow-lg shadow-yellow-900/30">
-                  <p className="text-yellow-300 text-sm font-semibold uppercase tracking-widest mb-1">
-                    🏆 Premio acumulado
-                  </p>
-                  <p className="text-5xl md:text-6xl font-black text-yellow-400 leading-none">
-                    {formatPesos(pozoGeneral)}
-                  </p>
-                  <p className="text-yellow-600 text-xs mt-2">
-                    {fixtures} planilla{fixtures !== 1 ? 's' : ''} × {formatPesos(800)} c/u · crece con cada nueva inscripción
-                  </p>
-                </div>
+            {/* Pozo acumulado */}
+            <div className="inline-block mb-10">
+              <div className="relative bg-gradient-to-br from-yellow-500/20 to-amber-600/20
+                              border-2 border-yellow-500/50 rounded-2xl px-10 py-6
+                              shadow-lg shadow-yellow-900/30">
+                <p className="text-yellow-300 text-sm font-semibold uppercase tracking-widest mb-2">
+                  🏆 Hay un pozo en juego
+                </p>
+                <p className="text-2xl md:text-3xl font-black text-white leading-snug">
+                  El ganador se lleva <span className="text-yellow-400">todo</span>
+                </p>
+                <p className="text-yellow-600 text-sm mt-3">
+                  Cuantas más planillas entren, más grande el premio
+                </p>
+                {fixtures > 0 && (
+                  <div className="mt-3 pt-3 border-t border-yellow-800/40">
+                    <p className="text-yellow-400 font-bold">
+                      {fixtures} planilla{fixtures !== 1 ? 's' : ''} inscripta{fixtures !== 1 ? 's' : ''} hasta ahora
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -106,67 +109,67 @@ export default async function Home() {
             </div>
 
             {/* Stats */}
-            <div className="flex justify-center gap-8 text-center flex-wrap">
-              <div>
-                <p className="text-3xl font-extrabold text-sky-400">{users}</p>
-                <p className="text-slate-400 text-sm">participante{users !== 1 ? 's' : ''}</p>
+            {(users > 0 || fixtures > 0) && (
+              <div className="flex justify-center gap-8 text-center flex-wrap">
+                <div>
+                  <p className="text-3xl font-extrabold text-sky-400">{users}</p>
+                  <p className="text-slate-400 text-sm">participante{users !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="w-px bg-slate-700" />
+                <div>
+                  <p className="text-3xl font-extrabold text-emerald-400">{fixtures}</p>
+                  <p className="text-slate-400 text-sm">planilla{fixtures !== 1 ? 's' : ''} inscripta{fixtures !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="w-px bg-slate-700" />
+                <div>
+                  <p className="text-3xl font-extrabold text-yellow-400">104</p>
+                  <p className="text-slate-400 text-sm">partidos</p>
+                </div>
               </div>
-              <div className="w-px bg-slate-700" />
-              <div>
-                <p className="text-3xl font-extrabold text-emerald-400">{fixtures}</p>
-                <p className="text-slate-400 text-sm">planilla{fixtures !== 1 ? 's' : ''} inscripta{fixtures !== 1 ? 's' : ''}</p>
-              </div>
-              <div className="w-px bg-slate-700" />
-              <div>
-                <p className="text-3xl font-extrabold text-yellow-400">104</p>
-                <p className="text-slate-400 text-sm">partidos</p>
-              </div>
-              <div className="w-px bg-slate-700" />
-              <div>
-                <p className="text-3xl font-extrabold text-white">{formatPesos(PRECIO_PLANILLA)}</p>
-                <p className="text-slate-400 text-sm">por planilla</p>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
-        {/* ── PREMIO ────────────────────────────────────────────────────── */}
-        <section className="bg-gradient-to-r from-yellow-950/50 to-amber-950/50 border-y border-yellow-800/30 py-16">
+        {/* ── DOS CHANCES PARA GANAR ────────────────────────────────────── */}
+        <section className="bg-gradient-to-r from-yellow-950/40 to-amber-950/40 border-y border-yellow-800/30 py-16">
           <div className="max-w-3xl mx-auto px-4 text-center">
-            <h2 className="text-3xl font-extrabold mb-2">🏆 Un solo ganador. Todo el pozo.</h2>
-            <p className="text-slate-400 mb-10">El que más puntos acumule al terminar el Mundial se lleva todo</p>
+            <h2 className="text-3xl font-extrabold mb-2">Dos chances para ganar</h2>
+            <p className="text-slate-400 mb-10">Competís en el ranking general y en tu grupo al mismo tiempo</p>
 
-            <div className="grid sm:grid-cols-3 gap-6">
-              <div className="card border-yellow-800/50 bg-yellow-900/10">
-                <div className="text-4xl mb-3">🏆</div>
-                <h3 className="font-bold text-lg text-yellow-400 mb-1">Ranking general</h3>
-                <p className="text-slate-400 text-sm mb-3">1 ganador entre todas las planillas</p>
-                <p className="text-2xl font-extrabold text-yellow-400">
-                  {fixtures > 0 ? formatPesos(pozoGeneral) : formatPesos(800) + ' por planilla'}
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="card border-yellow-800/50 bg-yellow-900/10 py-8">
+                <div className="text-5xl mb-4">🏆</div>
+                <h3 className="font-bold text-xl text-yellow-400 mb-2">Ranking general</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Competís contra todos. El que más puntos tenga al finalizar el Mundial
+                  <strong className="text-white"> se lleva todo el pozo general</strong>.
                 </p>
-                {fixtures > 0 && <p className="text-yellow-700 text-xs mt-1">y sigue creciendo</p>}
+                <div className="mt-4 pt-4 border-t border-yellow-900/50">
+                  <p className="text-yellow-600 text-xs">El pozo crece con cada planilla que entra</p>
+                </div>
               </div>
 
-              <div className="card border-sky-800/50 bg-sky-900/10">
-                <div className="text-4xl mb-3">👥</div>
-                <h3 className="font-bold text-lg text-sky-400 mb-1">Premio de grupo</h3>
-                <p className="text-slate-400 text-sm mb-3">1 ganador por grupo · mín. 10 planillas</p>
-                <p className="text-2xl font-extrabold text-sky-400">{formatPesos(400)}</p>
-                <p className="text-sky-700 text-xs mt-1">por cada planilla del grupo</p>
-              </div>
-
-              <div className="card border-emerald-800/50 bg-emerald-900/10">
-                <div className="text-4xl mb-3">🎁</div>
-                <h3 className="font-bold text-lg text-emerald-400 mb-1">Formador de grupo</h3>
-                <p className="text-slate-400 text-sm mb-3">Armá un grupo y ganás por cada miembro</p>
-                <p className="text-2xl font-extrabold text-emerald-400">{formatPesos(300)}</p>
-                <p className="text-emerald-700 text-xs mt-1">por cada planilla de tu grupo</p>
+              <div className="card border-sky-800/50 bg-sky-900/10 py-8">
+                <div className="text-5xl mb-4">👥</div>
+                <h3 className="font-bold text-xl text-sky-400 mb-2">Premio de grupo</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  Armás un grupo con amigos, familia o trabajo. El ganador del grupo
+                  <strong className="text-white"> se lleva el pozo de ese grupo</strong>.
+                </p>
+                <div className="mt-4 pt-4 border-t border-sky-900/50">
+                  <p className="text-sky-600 text-xs">Cada planilla del grupo suma al pozo · mín. 10 planillas</p>
+                </div>
               </div>
             </div>
 
-            <p className="text-slate-500 text-sm mt-8">
-              Cada planilla compite individualmente. Comprando más tenés más chances, pero hay que acertar.
-            </p>
+            <div className="card border-emerald-800/50 bg-emerald-900/10 mt-6 py-6">
+              <div className="text-4xl mb-3">🎁</div>
+              <h3 className="font-bold text-lg text-emerald-400 mb-2">Formador de grupo</h3>
+              <p className="text-slate-400 text-sm max-w-lg mx-auto">
+                El que arma el grupo recibe un incentivo por cada planilla que entren sus miembros.
+                <strong className="text-white"> Cuanto más grande el grupo, más cobrás</strong>, sin importar si ganás o no.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -176,10 +179,10 @@ export default async function Home() {
           <p className="text-slate-400 text-center mb-12">En 4 pasos simples</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: '📝', step: '1', title: 'Te anotás', desc: 'Creás tu cuenta gratis con email y contraseña.' },
-              { icon: '✅', step: '2', title: 'Pedís tu planilla', desc: `Solicitás 1 o más planillas a ${formatPesos(PRECIO_PLANILLA)} c/u.` },
-              { icon: '⚽', step: '3', title: 'Completás el fixture', desc: 'Predecís el resultado de los 104 partidos y los extras.' },
-              { icon: '🏆', step: '4', title: 'Ganás el pozo', desc: 'El que más puntos acumule al final del Mundial gana todo.' },
+              { icon: '📝', step: '1', title: 'Te anotás',          desc: 'Creás tu cuenta gratis con email y contraseña.' },
+              { icon: '✅', step: '2', title: 'Pedís tu planilla',   desc: 'Solicitás 1 o más planillas. Cada una es una chance más de ganar.' },
+              { icon: '⚽', step: '3', title: 'Completás el fixture', desc: 'Predecís los 104 partidos del Mundial y los extras.' },
+              { icon: '🏆', step: '4', title: 'Ganás el pozo',       desc: 'Al terminar el Mundial, el que más puntos tenga se lleva todo.' },
             ].map(item => (
               <div key={item.step} className="card text-center hover:border-sky-600 transition-colors">
                 <div className="text-4xl mb-3">{item.icon}</div>
@@ -221,38 +224,6 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* ── GRUPOS ────────────────────────────────────────────────────── */}
-        <section className="max-w-4xl mx-auto px-4 py-20">
-          <div className="card bg-gradient-to-br from-slate-800 to-slate-800/50 border-sky-800/50 text-center py-12">
-            <div className="text-5xl mb-4">👥</div>
-            <h2 className="text-3xl font-extrabold mb-3">Armá tu grupo y ganás doble</h2>
-            <p className="text-slate-300 text-lg max-w-xl mx-auto mb-4">
-              Competís en el ranking general <strong className="text-white">y</strong> en tu grupo privado.
-              El ganador del grupo se lleva el pozo del grupo. El formador cobra <strong className="text-emerald-400">{formatPesos(300)} por cada planilla</strong> de su grupo.
-            </p>
-            <div className="flex justify-center gap-6 mb-8 flex-wrap">
-              {[
-                { icon: '👨‍👩‍👧‍👦', label: 'Familia' },
-                { icon: '💼', label: 'Trabajo' },
-                { icon: '🎓', label: 'Amigos' },
-              ].map(g => (
-                <div key={g.label} className="text-center">
-                  <div className="text-4xl mb-1">{g.icon}</div>
-                  <p className="text-slate-400 text-sm">{g.label}</p>
-                </div>
-              ))}
-            </div>
-            <div className="bg-slate-900/50 rounded-xl p-4 max-w-sm mx-auto mb-6 text-sm">
-              <p className="text-slate-400">Ejemplo: grupo de <strong className="text-white">20 personas</strong></p>
-              <p className="text-emerald-400 font-bold mt-1">→ Premio del ganador: {formatPesos(calcPozoGrupo(20))}</p>
-              <p className="text-sky-400 font-bold">→ Formador cobra: {formatPesos(300 * 20)}</p>
-            </div>
-            <Link href="/register" className="btn-primary text-lg px-8 py-3">
-              Quiero participar
-            </Link>
-          </div>
-        </section>
-
         {/* ── CTA FINAL ─────────────────────────────────────────────────── */}
         <section className="relative overflow-hidden bg-gradient-to-r from-sky-600 to-blue-700 py-20">
           <div className="absolute inset-0 opacity-10"
@@ -265,17 +236,17 @@ export default async function Home() {
             <p className="text-sky-100 text-lg mb-2">
               El Mundial empieza el <strong>11 de junio de 2026</strong>.
             </p>
-            {fixtures > 0 && (
-              <p className="text-yellow-300 text-2xl font-extrabold mb-6">
-                Premio acumulado: {formatPesos(pozoGeneral)} 🏆
-              </p>
-            )}
+            <p className="text-yellow-300 text-xl font-bold mb-8">
+              Hay un pozo en juego. El que más acierte se lo lleva todo.
+            </p>
             <Link href="/register"
               className="inline-flex items-center gap-2 bg-white text-blue-700 font-extrabold
                          text-xl px-10 py-4 rounded-xl hover:bg-sky-50 transition-colors shadow-xl">
-              🚀 Registrarme — {formatPesos(PRECIO_PLANILLA)}
+              🚀 Quiero participar
             </Link>
-            <p className="text-sky-200 text-sm mt-4">El pozo crece con cada nueva planilla inscripta.</p>
+            <p className="text-sky-200 text-sm mt-4">
+              Cuantos más entren, más grande el pozo.
+            </p>
           </div>
         </section>
 

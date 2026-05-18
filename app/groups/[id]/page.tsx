@@ -6,7 +6,6 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { Spinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
-import { formatPesos } from '@/lib/prizes'
 
 type RankingEntry = {
   position:      number
@@ -76,11 +75,11 @@ export default function GroupRankingPage() {
               <div className="relative bg-gradient-to-br from-yellow-500/20 to-amber-600/20
                               border-2 border-yellow-500/50 rounded-2xl p-5 mb-6 text-center">
                 <p className="text-yellow-300 text-xs font-semibold uppercase tracking-widest mb-1">
-                  Premio del grupo — 1 solo ganador
+                  🏆 Hay un pozo en juego
                 </p>
-                <p className="text-5xl font-black text-yellow-400">{formatPesos(pozoGrupo)}</p>
+                <p className="text-2xl font-black text-white">El ganador se lleva todo</p>
                 <p className="text-yellow-700 text-sm mt-1">
-                  {totalFixtures} planillas × {formatPesos(400)} c/u
+                  {totalFixtures} planilla{totalFixtures !== 1 ? 's' : ''} · cuantas más entren, más grande el pozo
                 </p>
               </div>
             ) : (
@@ -89,7 +88,7 @@ export default function GroupRankingPage() {
                   Faltan {MIN_FIXTURES - totalFixtures} planilla{MIN_FIXTURES - totalFixtures !== 1 ? 's' : ''} para activar el premio
                 </p>
                 <p className="text-slate-400 text-sm mt-1">
-                  Mínimo {MIN_FIXTURES} planillas · premio potencial: {formatPesos(pozoGrupo + (MIN_FIXTURES - totalFixtures) * 400)}
+                  Mínimo {MIN_FIXTURES} planillas · cuantas más entren, más grande el pozo
                 </p>
               </div>
             )}
@@ -117,14 +116,15 @@ export default function GroupRankingPage() {
             )}
 
             {/* Incentivo formador */}
-            {incentivoFormador > 0 && (
+            {totalFixtures > 0 && (
               <div className="card border-emerald-800/40 bg-emerald-900/10 mb-6 flex items-center gap-4 py-4">
                 <div className="text-3xl">🎁</div>
                 <div className="flex-1">
                   <p className="text-emerald-400 font-semibold text-sm">Incentivo del formador</p>
-                  <p className="text-slate-400 text-xs">{totalFixtures} planillas × $300</p>
+                  <p className="text-slate-400 text-xs">
+                    El formador cobra un incentivo por cada planilla del grupo, independientemente de quién gane
+                  </p>
                 </div>
-                <p className="text-emerald-400 font-extrabold text-xl">{formatPesos(incentivoFormador)}</p>
               </div>
             )}
 
@@ -201,8 +201,7 @@ export default function GroupRankingPage() {
             </div>
 
             <p className="text-center text-slate-600 text-xs mt-4">
-              Cada planilla compite por separado. Al finalizar el torneo, el puesto #1
-              {totalFixtures >= MIN_FIXTURES ? ` gana ${formatPesos(pozoGrupo)}.` : ' gana el pozo acumulado.'}
+              Cada planilla compite por separado. Al finalizar el torneo, el puesto #1 se lleva el pozo del grupo.
             </p>
           </>
         )}
