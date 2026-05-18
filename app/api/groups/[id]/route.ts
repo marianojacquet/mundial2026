@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth'
+import { calcPozoGrupo, calcIncentivosFormador } from '@/lib/prizes'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,5 +48,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     isCurrentUser: f.userId === session.sub,
   }))
 
-  return NextResponse.json({ group, ranking })
+  const totalFixturesInGroup = fixtures.length
+  const pozoGrupo      = calcPozoGrupo(totalFixturesInGroup)
+  const incentivoFormador = calcIncentivosFormador(totalFixturesInGroup)
+
+  return NextResponse.json({ group, ranking, pozoGrupo, incentivoFormador, totalFixturesInGroup })
 }

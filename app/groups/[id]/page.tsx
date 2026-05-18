@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { Spinner } from '@/components/ui/Spinner'
 import { Alert } from '@/components/ui/Alert'
+import { formatPesos } from '@/lib/prizes'
 
 type RankingEntry = {
   position:      number
@@ -17,26 +18,17 @@ type RankingEntry = {
   isCurrentUser: boolean
 }
 
-type Group = {
-  id:           string
-  name:         string
-  description?: string
-}
-
-const MEDALS        = ['🥇', '🥈', '🥉']
-const PODIUM_COLORS = [
-  'from-yellow-700 to-yellow-500',
-  'from-slate-600 to-slate-400',
-  'from-amber-800 to-amber-600',
-]
-const SCORE_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-500']
+type Group = { id: string; name: string; description?: string }
 
 export default function GroupRankingPage() {
   const { id } = useParams<{ id: string }>()
-  const [group,   setGroup]   = useState<Group | null>(null)
-  const [ranking, setRanking] = useState<RankingEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
+  const [group,             setGroup]             = useState<Group | null>(null)
+  const [ranking,           setRanking]           = useState<RankingEntry[]>([])
+  const [pozoGrupo,         setPozoGrupo]         = useState(0)
+  const [incentivoFormador, setIncentivoFormador] = useState(0)
+  const [totalFixtures,     setTotalFixtures]     = useState(0)
+  const [loading,           setLoading]           = useState(true)
+  const [error,             setError]             = useState('')
 
   useEffect(() => {
     fetch(`/api/groups/${id}`)
@@ -45,11 +37,15 @@ export default function GroupRankingPage() {
         if (d.error) { setError(d.error); setLoading(false); return }
         setGroup(d.group)
         setRanking(d.ranking)
+        setPozoGrupo(d.pozoGrupo ?? 0)
+        setIncentivoFormador(d.incentivoFormador ?? 0)
+        setTotalFixtures(d.totalFixturesInGroup ?? 0)
         setLoading(false)
       })
   }, [id])
 
-  const top3 = ranking.slice(0, 3)
+  const winner = ranking[0] ?? null
+  const MIN_FIXTURES = 10
 
   return (
     <>
@@ -66,42 +62,69 @@ export default function GroupRankingPage() {
         ) : (
           <>
             {/* Header del grupo */}
-            <div className="mb-8 text-center">
+            <div className="mb-6 text-center">
               <div className="text-5xl mb-3">👥</div>
               <h1 className="text-3xl font-extrabold">{group?.name}</h1>
               {group?.description && <p className="text-slate-400 mt-2">{group.description}</p>}
-              <p className="text-slate-500 text-sm mt-1">{ranking.length} planilla{ranking.length !== 1 ? 's' : ''} en competencia</p>
+              <p className="text-slate-500 text-sm mt-1">
+                {totalFixtures} planilla{totalFixtures !== 1 ? 's' : ''} · 1 solo ganador
+              </p>
             </div>
 
-            {/* Podio Top 3 */}
-            {top3.length >= 2 && (
-              <div className="flex justify-center items-end gap-3 mb-10">
-                {[1, 0, 2].map(idx => {
-                  const entry = top3[idx]
-                  if (!entry) return null
-                  const rank    = idx + 1
-                  const heights = ['h-28', 'h-36', 'h-20']
-                  return (
-                    <div key={`${entry.userId}-${entry.fixtureName}-${idx}`}
-                      className={`flex flex-col items-center ${idx === 0 ? 'order-2' : idx === 1 ? 'order-1' : 'order-3'}`}>
-                      <div className="text-3xl mb-1">{MEDALS[rank - 1]}</div>
-                      <p className={`font-bold text-sm text-center max-w-[80px] truncate
-                        ${entry.isCurrentUser ? 'text-sky-400' : 'text-white'}`}>
-                        {entry.isCurrentUser ? 'Vos' : entry.userName}
-                      </p>
-                      <p className="text-xs text-slate-500 mb-1 max-w-[80px] truncate text-center">
-                        {entry.fixtureName}
-                      </p>
-                      <p className={`text-sm font-extrabold mb-2 ${SCORE_COLORS[rank - 1]}`}>
-                        {entry.totalScore.toFixed(1)} pts
-                      </p>
-                      <div className={`${heights[rank - 1]} w-20 bg-gradient-to-t ${PODIUM_COLORS[rank - 1]}
-                        rounded-t-lg flex items-start justify-center pt-2`}>
-                        <span className={`text-xl font-extrabold ${SCORE_COLORS[rank - 1]}`}>#{rank}</span>
-                      </div>
-                    </div>
-                  )
-                })}
+            {/* Pozo del grupo */}
+            {totalFixtures >= MIN_FIXTURES ? (
+              <div className="relative bg-gradient-to-br from-yellow-500/20 to-amber-600/20
+                              border-2 border-yellow-500/50 rounded-2xl p-5 mb-6 text-center">
+                <p className="text-yellow-300 text-xs font-semibold uppercase tracking-widest mb-1">
+                  Premio del grupo — 1 solo ganador
+                </p>
+                <p className="text-5xl font-black text-yellow-400">{formatPesos(pozoGrupo)}</p>
+                <p className="text-yellow-700 text-sm mt-1">
+                  {totalFixtures} planillas × {formatPesos(400)} c/u
+                </p>
+              </div>
+            ) : (
+              <div className="card border-amber-800/50 bg-amber-900/10 mb-6 text-center py-4">
+                <p className="text-amber-400 font-semibold">
+                  Faltan {MIN_FIXTURES - totalFixtures} planilla{MIN_FIXTURES - totalFixtures !== 1 ? 's' : ''} para activar el premio
+                </p>
+                <p className="text-slate-400 text-sm mt-1">
+                  Mínimo {MIN_FIXTURES} planillas · premio potencial: {formatPesos(pozoGrupo + (MIN_FIXTURES - totalFixtures) * 400)}
+                </p>
+              </div>
+            )}
+
+            {/* Ganador actual */}
+            {winner && totalFixtures >= MIN_FIXTURES && (
+              <div className="card border-yellow-600/40 bg-gradient-to-r from-yellow-900/20 to-amber-900/20 mb-6 p-5">
+                <div className="flex items-center gap-4">
+                  <div className="text-4xl">🥇</div>
+                  <div className="flex-1">
+                    <p className="text-xs text-yellow-500 font-semibold uppercase tracking-wider mb-1">
+                      Líder del grupo
+                    </p>
+                    <p className="text-xl font-extrabold text-white">
+                      {winner.isCurrentUser ? 'Vos' : winner.userName}
+                    </p>
+                    <p className="text-slate-400 text-sm">{winner.fixtureName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-extrabold text-yellow-400">{winner.totalScore.toFixed(1)}</p>
+                    <p className="text-yellow-600 text-xs">puntos</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Incentivo formador */}
+            {incentivoFormador > 0 && (
+              <div className="card border-emerald-800/40 bg-emerald-900/10 mb-6 flex items-center gap-4 py-4">
+                <div className="text-3xl">🎁</div>
+                <div className="flex-1">
+                  <p className="text-emerald-400 font-semibold text-sm">Incentivo del formador</p>
+                  <p className="text-slate-400 text-xs">{totalFixtures} planillas × $300</p>
+                </div>
+                <p className="text-emerald-400 font-extrabold text-xl">{formatPesos(incentivoFormador)}</p>
               </div>
             )}
 
@@ -129,22 +152,29 @@ export default function GroupRankingPage() {
                         Ningún miembro ha enviado planillas todavía.
                       </td>
                     </tr>
-                  ) : (
-                    ranking.map((entry, i) => (
+                  ) : ranking.map((entry, i) => {
+                    const isWinner = i === 0 && totalFixtures >= MIN_FIXTURES
+                    return (
                       <tr key={`${entry.fixtureId ?? entry.userId}-${i}`}
                         className={`transition-colors
-                          ${entry.isCurrentUser ? 'bg-sky-950/30' : 'hover:bg-slate-700/20'}`}>
+                          ${isWinner ? 'bg-yellow-900/20'
+                          : entry.isCurrentUser ? 'bg-sky-950/30'
+                          : 'hover:bg-slate-700/20'}`}>
                         <td className="table-cell text-center">
-                          {entry.position <= 3
-                            ? <span className="text-lg">{MEDALS[entry.position - 1]}</span>
-                            : <span className={`font-mono font-bold ${entry.position <= 10 ? 'text-sky-400' : 'text-slate-500'}`}>
+                          {isWinner
+                            ? <span className="text-xl">🥇</span>
+                            : <span className={`font-mono text-sm ${entry.isCurrentUser ? 'text-sky-400' : 'text-slate-500'}`}>
                                 #{entry.position}
                               </span>}
                         </td>
                         <td className="table-cell">
-                          <span className={`font-medium ${entry.isCurrentUser ? 'text-sky-400' : ''}`}>
+                          <span className={`font-medium
+                            ${isWinner ? 'text-yellow-400'
+                            : entry.isCurrentUser ? 'text-sky-400'
+                            : 'text-white'}`}>
                             {entry.userName}
-                            {entry.isCurrentUser && <span className="ml-2 text-xs text-sky-500">(vos)</span>}
+                            {entry.isCurrentUser && <span className="ml-2 text-xs opacity-60">(vos)</span>}
+                            {isWinner && <span className="ml-2 text-xs text-yellow-500">líder</span>}
                           </span>
                         </td>
                         <td className="table-cell text-slate-400 text-sm hidden sm:table-cell">
@@ -157,45 +187,22 @@ export default function GroupRankingPage() {
                         </td>
                         <td className="table-cell text-right">
                           <span className={`font-bold text-lg
-                            ${entry.position === 1 ? 'text-yellow-400'
-                            : entry.position === 2 ? 'text-slate-300'
-                            : entry.position === 3 ? 'text-amber-500'
-                            : entry.position <= 10 ? 'text-sky-400'
+                            ${isWinner ? 'text-yellow-400'
+                            : entry.isCurrentUser ? 'text-sky-400'
                             : 'text-slate-300'}`}>
                             {entry.totalScore.toFixed(1)}
                           </span>
                         </td>
                       </tr>
-                    ))
-                  )}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {/* Top 3 del grupo */}
-            {ranking.length >= 3 && (
-              <div className="mt-6 card">
-                <h3 className="font-semibold mb-3">🏆 Top 3 del grupo</h3>
-                <div className="space-y-2">
-                  {ranking.slice(0, 3).map((e, i) => (
-                    <div key={`top3-${e.fixtureId ?? e.userId}-${i}`} className="flex items-center gap-3">
-                      <span className="text-xl">{MEDALS[i]}</span>
-                      <div className="flex-1 min-w-0">
-                        <span className={`font-medium ${e.isCurrentUser ? 'text-sky-400' : 'text-white'}`}>
-                          {e.userName}
-                        </span>
-                        <span className="text-slate-500 text-xs ml-2">{e.fixtureName}</span>
-                      </div>
-                      <span className="text-slate-400 text-sm">{e.totalScore.toFixed(1)} pts</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <p className="text-center text-slate-600 text-xs mt-4">
-              Cada planilla compite de forma independiente. Un participante puede tener
-              varias planillas en distintas posiciones.
+              Cada planilla compite por separado. Al finalizar el torneo, el puesto #1
+              {totalFixtures >= MIN_FIXTURES ? ` gana ${formatPesos(pozoGrupo)}.` : ' gana el pozo acumulado.'}
             </p>
           </>
         )}
