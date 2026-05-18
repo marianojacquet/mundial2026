@@ -1,7 +1,7 @@
-// Reglas de puntaje:
-// - Resultado correcto (local gana / empate / visitante gana): 2 puntos
-// - Extra goles primer tiempo correctos: 0.5 puntos
-// - Extra tarjetas correctas: 0.5 puntos
+// ─── Reglas de puntaje ───────────────────────────────────────────────────────
+// +2 resultado correcto (local gana / empate / visitante gana)
+// +2 marcador exacto (cantidad de goles exacta)
+// Máximo 4 puntos por partido · 104 partidos · máximo total: 416 puntos
 
 type MatchResult = 'HOME' | 'DRAW' | 'AWAY'
 
@@ -14,42 +14,21 @@ function getResult(home: number, away: number): MatchResult {
 export function calculatePredictionPoints(params: {
   predictedHome: number
   predictedAway: number
-  actualHome: number
-  actualAway: number
-  // Extras
-  extraFirstHalfGoals?: number | null
-  actualFirstHalfGoals?: number | null
-  extraCardsType?: 'YELLOW' | 'RED' | null
-  extraCardsValue?: number | null
-  actualYellowCards?: number | null
-  actualRedCards?: number | null
+  actualHome:    number
+  actualAway:    number
 }): number {
   let points = 0
 
   const predictedResult = getResult(params.predictedHome, params.predictedAway)
-  const actualResult = getResult(params.actualHome, params.actualAway)
+  const actualResult    = getResult(params.actualHome,    params.actualAway)
 
-  if (predictedResult === actualResult) {
+  // +2 por resultado correcto
+  if (predictedResult === actualResult) points += 2
+
+  // +2 por marcador exacto
+  if (params.predictedHome === params.actualHome &&
+      params.predictedAway === params.actualAway) {
     points += 2
-  }
-
-  if (
-    params.extraFirstHalfGoals != null &&
-    params.actualFirstHalfGoals != null &&
-    params.extraFirstHalfGoals === params.actualFirstHalfGoals
-  ) {
-    points += 0.5
-  }
-
-  if (params.extraCardsType != null && params.extraCardsValue != null) {
-    const actualCards =
-      params.extraCardsType === 'YELLOW'
-        ? params.actualYellowCards
-        : params.actualRedCards
-
-    if (actualCards != null && params.extraCardsValue === actualCards) {
-      points += 0.5
-    }
   }
 
   return points

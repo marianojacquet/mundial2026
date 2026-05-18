@@ -122,12 +122,9 @@ model Match {
   city        String?
 
   // Resultados (cargados por el admin)
-  homeScore      Int?
-  awayScore      Int?
-  firstHalfGoals Int?  // goles totales en el primer tiempo
-  yellowCards    Int?  // tarjetas amarillas totales
-  redCards       Int?  // tarjetas rojas totales
-  played         Boolean @default(false)
+  homeScore Int?
+  awayScore Int?
+  played    Boolean @default(false)
 
   predictions Prediction[]
 }
@@ -151,29 +148,20 @@ model Prediction {
   matchId   String
   match     Match   @relation(fields: [matchId], references: [id])
 
-  // Predicción principal: marcador
+  // Marcador predicho
   homeScore Int
   awayScore Int
 
-  // Extra 1: goles en el primer tiempo (opcional)
-  extraFirstHalfGoals Int?
-
-  // Extra 2: tarjetas (opcional, el usuario elige amarillas o rojas)
-  extraCardsType  CardType? // YELLOW o RED
-  extraCardsValue Int?
-
-  // Puntos calculados
+  // Puntos calculados:
+  // +2 resultado correcto (gana local / empate / gana visitante)
+  // +2 marcador exacto (goles exactos)
+  // máximo 4 puntos por partido
   points Float @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([fixtureId, matchId])
-}
-
-enum CardType {
-  YELLOW
-  RED
 }
 
 // ─── Grupos de competencia ────────────────────────────────────────────────────

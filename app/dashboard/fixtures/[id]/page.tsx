@@ -16,14 +16,10 @@ type Match = {
   homeLabel: string | null; awayLabel: string | null
   scheduledAt: string; venue: string | null
   homeScore: number | null; awayScore: number | null
-  firstHalfGoals: number | null; yellowCards: number | null; redCards: number | null
   played: boolean
 }
 type Prediction = {
   id?: string; matchId: string; homeScore: number; awayScore: number
-  extraFirstHalfGoals: number | null
-  extraCardsType: 'YELLOW' | 'RED' | null
-  extraCardsValue: number | null
   points?: number
 }
 type Fixture = {
@@ -62,13 +58,10 @@ export default function FixturePage() {
     const map: PredMap = {}
     for (const p of fData.fixture.predictions ?? []) {
       map[p.matchId] = {
-        matchId: p.matchId,
+        matchId:   p.matchId,
         homeScore: p.homeScore,
         awayScore: p.awayScore,
-        extraFirstHalfGoals: p.extraFirstHalfGoals,
-        extraCardsType: p.extraCardsType,
-        extraCardsValue: p.extraCardsValue,
-        points: p.points,
+        points:    p.points,
       }
     }
     setPreds(map)
@@ -79,11 +72,7 @@ export default function FixturePage() {
 
   function setPred(matchId: string, field: keyof Prediction, value: unknown) {
     setPreds(prev => {
-      const existing = prev[matchId]
-      const base: Prediction = existing ?? {
-        matchId, homeScore: 0, awayScore: 0,
-        extraFirstHalfGoals: null, extraCardsType: null, extraCardsValue: null,
-      }
+      const base: Prediction = prev[matchId] ?? { matchId, homeScore: 0, awayScore: 0 }
       return { ...prev, [matchId]: { ...base, [field]: value } }
     })
     setDirty(true)
@@ -273,9 +262,9 @@ function ScoreInput({
 function MatchRow({
   match, pred, onPred, editable
 }: {
-  match: Match
-  pred: Prediction | undefined
-  onPred: (matchId: string, field: keyof Prediction, value: unknown) => void
+  match:    Match
+  pred:     Prediction | undefined
+  onPred:   (matchId: string, field: keyof Prediction, value: unknown) => void
   editable: boolean
 }) {
   const home = pred?.homeScore ?? 0
@@ -284,37 +273,49 @@ function MatchRow({
   const homeLabel = match.homeTeam ? `${match.homeTeam.flag} ${match.homeTeam.name}` : (match.homeLabel ?? '?')
   const awayLabel = match.awayTeam ? `${match.awayTeam.flag} ${match.awayTeam.name}` : (match.awayLabel ?? '?')
 
-  const showExtras = pred != null
+  const played  = match.played
+  const points  = pred?.points ?? 0
 
-  // Determinar resultado real si el partido ya se jugó
-  const played = match.played
-  const resultText = played && match.homeScore != null && match.awayScore != null
-    ? `${match.homeScore} - ${match.awayScore}`
-    : null
+  // Resultado real
+  const realHome = match.homeScore
+  const realAway = match.awayScore
+  const hasResult = played && realHome != null && realAway != null
 
-  const points = pred?.points ?? 0
+  // Resultado correcto
+  const getWinner = (h: number, a: number) => h > a ? 'home' : h < a ? 'away' : 'draw'
+  const resultOk  = hasResult && pred != null && getWinner(home, away) === getWinner(realHome!, realAway!)
+  const exactOk   = hasResult && pred != null && home === realHome && away === realAway
 
   return (
     <div className={cn(
       'card p-4',
       played && 'border-l-4',
-      played && points > 0 ? 'border-l-emerald-500' : played ? 'border-l-red-600' : ''
+      played && exactOk  ? 'border-l-yellow-400' :
+      played && resultOk ? 'border-l-emerald-500' :
+      played             ? 'border-l-red-700'     : ''
     )}>
-      <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+      {/* Info del partido */}
+      <div className="flex items-center gap-2 text-xs text-slate-400 mb-3 flex-wrap">
         <span>#{match.matchNumber}</span>
         <span>·</span>
         <span>{formatDate(match.scheduledAt)}</span>
         {match.venue && <><span>·</span><span className="truncate max-w-xs">{match.venue}</span></>}
-        {played && resultText && (
+        {hasResult && (
           <>
             <span>·</span>
-            <span className="text-white font-semibold">Resultado: {resultText}</span>
-            {points > 0 && <span className="text-emerald-400 font-bold">+{points}pts</span>}
+            <span className="text-white font-semibold">
+              Real: {realHome}–{realAway}
+            </span>
+            {points > 0 && (
+              <span className={`font-bold ${exactOk ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                +{points} pts {exactOk ? '🎯' : '✓'}
+              </span>
+            )}
           </>
         )}
       </div>
 
-      {/* Score row */}
+      {/* Marcador predicho */}
       <div className="flex items-center gap-3 flex-wrap">
         <span className="flex-1 text-right font-medium text-sm">{homeLabel}</span>
         <div className="flex items-center gap-2 shrink-0">
@@ -325,69 +326,17 @@ function MatchRow({
         <span className="flex-1 font-medium text-sm">{awayLabel}</span>
       </div>
 
-      {/* Extras */}
-      {editable && (
-        <div className="mt-3 pt-3 border-t border-slate-700 grid sm:grid-cols-2 gap-3">
-          {/* Extra 1: goles 1er tiempo */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-400 whitespace-nowrap">⚽ Goles 1° tiempo:</label>
-            <input
-              type="number" min={0} max={20}
-              className="w-16 text-center bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm
-                         focus:outline-none focus:ring-1 focus:ring-sky-500"
-              value={pred?.extraFirstHalfGoals ?? ''}
-              placeholder="-"
-              onChange={e => onPred(match.id, 'extraFirstHalfGoals', e.target.value === '' ? null : Number(e.target.value))}
-            />
-          </div>
-
-          {/* Extra 2: tarjetas */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-400 whitespace-nowrap">🟨 Tarjetas:</label>
-            <select
-              className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
-              value={pred?.extraCardsType ?? ''}
-              onChange={e => onPred(match.id, 'extraCardsType', e.target.value === '' ? null : e.target.value)}
-            >
-              <option value="">No predecir</option>
-              <option value="YELLOW">Amarillas</option>
-              <option value="RED">Rojas</option>
-            </select>
-            {pred?.extraCardsType && (
-              <input
-                type="number" min={0} max={30}
-                className="w-16 text-center bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm
-                           focus:outline-none focus:ring-1 focus:ring-sky-500"
-                value={pred?.extraCardsValue ?? ''}
-                placeholder="0"
-                onChange={e => onPred(match.id, 'extraCardsValue', e.target.value === '' ? null : Number(e.target.value))}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Ver extras guardados (modo no editable) */}
-      {!editable && pred && (pred.extraFirstHalfGoals != null || pred.extraCardsType) && (
-        <div className="mt-2 pt-2 border-t border-slate-700 flex gap-4 text-xs text-slate-400">
-          {pred.extraFirstHalfGoals != null && (
-            <span>⚽ 1°T: <strong className="text-white">{pred.extraFirstHalfGoals}</strong></span>
-          )}
-          {pred.extraCardsType && pred.extraCardsValue != null && (
-            <span>
-              {pred.extraCardsType === 'YELLOW' ? '🟨' : '🟥'} Tarjetas:{' '}
-              <strong className="text-white">{pred.extraCardsValue}</strong>
-            </span>
-          )}
-          {played && (
-            <span className="ml-auto text-sky-400">
-              {pred.extraFirstHalfGoals != null && match.firstHalfGoals === pred.extraFirstHalfGoals && '✅ 1°T '}
-              {pred.extraCardsType && (
-                pred.extraCardsType === 'YELLOW'
-                  ? match.yellowCards === pred.extraCardsValue ? '✅ Amarillas' : ''
-                  : match.redCards === pred.extraCardsValue ? '✅ Rojas' : ''
-              )}
-            </span>
+      {/* Indicadores de puntos (modo solo lectura, partido jugado) */}
+      {!editable && hasResult && pred && (
+        <div className="mt-2 pt-2 border-t border-slate-700 flex gap-4 text-xs">
+          <span className={resultOk ? 'text-emerald-400' : 'text-slate-600'}>
+            {resultOk ? '✓' : '✗'} Resultado correcto
+          </span>
+          <span className={exactOk ? 'text-yellow-400' : 'text-slate-600'}>
+            {exactOk ? '✓' : '✗'} Marcador exacto
+          </span>
+          {points > 0 && (
+            <span className="ml-auto font-bold text-white">+{points} pts</span>
           )}
         </div>
       )}

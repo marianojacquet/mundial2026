@@ -4,12 +4,9 @@ import { prisma } from '@/lib/db'
 import { getSessionFromRequest } from '@/lib/auth'
 
 const predictionSchema = z.object({
-  matchId:             z.string(),
-  homeScore:           z.number().int().min(0).max(30),
-  awayScore:           z.number().int().min(0).max(30),
-  extraFirstHalfGoals: z.number().int().min(0).max(20).nullable().optional(),
-  extraCardsType:      z.enum(['YELLOW', 'RED']).nullable().optional(),
-  extraCardsValue:     z.number().int().min(0).max(30).nullable().optional(),
+  matchId:   z.string(),
+  homeScore: z.number().int().min(0).max(30),
+  awayScore: z.number().int().min(0).max(30),
 })
 
 const bulkSchema = z.object({
@@ -34,35 +31,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const { predictions } = parsed.data
 
-  // Validar que los partidos existen
   const matchIds = predictions.map(p => p.matchId)
-  const matches = await prisma.match.findMany({ where: { id: { in: matchIds } } })
+  const matches  = await prisma.match.findMany({ where: { id: { in: matchIds } } })
   if (matches.length !== matchIds.length) {
     return NextResponse.json({ error: 'Uno o más partidos no existen' }, { status: 400 })
   }
 
-  // Upsert predicciones
   const upserted = await Promise.all(
     predictions.map(p =>
       prisma.prediction.upsert({
-        where: { fixtureId_matchId: { fixtureId: params.id, matchId: p.matchId } },
-        create: {
-          fixtureId: params.id,
-          matchId: p.matchId,
-          homeScore: p.homeScore,
-          awayScore: p.awayScore,
-          extraFirstHalfGoals: p.extraFirstHalfGoals ?? null,
-          extraCardsType: p.extraCardsType ?? null,
-          extraCardsValue: p.extraCardsValue ?? null,
-        },
-        update: {
-          homeScore: p.homeScore,
-          awayScore: p.awayScore,
-          extraFirstHalfGoals: p.extraFirstHalfGoals ?? null,
-          extraCardsType: p.extraCardsType ?? null,
-          extraCardsValue: p.extraCardsValue ?? null,
-          points: 0, // se recalcula cuando el partido se juega
-        },
+        where:  { fixtureId_matchId: { fixtureId: params.id, matchId: p.matchId } },
+        create: { fixtureId: params.id, matchId: p.matchId, homeScore: p.homeScore, awayScore: p.awayScore },
+        update: { homeScore: p.homeScore, awayScore: p.awayScore, points: 0 },
       })
     )
   )

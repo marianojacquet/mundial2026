@@ -65,7 +65,7 @@ export default async function FixtureDetailPage({ params }: { params: { id: stri
   const totalPredictions = fixture.predictions.length
   const playedPredictions = fixture.predictions.filter(p => p.match.played)
   const correctResults = playedPredictions.filter(p => p.points >= 2).length
-  const withExtras = playedPredictions.filter(p => p.points > 2).length
+  const exactScores   = playedPredictions.filter(p => p.points === 4).length
 
   return (
     <>
@@ -112,8 +112,8 @@ export default async function FixtureDetailPage({ params }: { params: { id: stri
               <p className="text-xs text-slate-400 mt-1">Resultados correctos</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-extrabold text-sky-400">{withExtras}</p>
-              <p className="text-xs text-slate-400 mt-1">Con extras acertados</p>
+              <p className="text-2xl font-extrabold text-yellow-400">{exactScores}</p>
+              <p className="text-xs text-slate-400 mt-1">Marcador exacto</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-extrabold text-slate-300">{playedPredictions.length}</p>
@@ -125,7 +125,7 @@ export default async function FixtureDetailPage({ params }: { params: { id: stri
         {/* Detalle por fase */}
         {Object.entries(byPhase).map(([phase, preds]) => {
           const phaseScore = preds.reduce((sum, p) => sum + p.points, 0)
-          const phaseMax   = preds.filter(p => p.match.played).length * 3 // max 3pts por partido
+          const phaseMax   = preds.filter(p => p.match.played).length * 4 // max 4pts por partido
 
           // Agrupar por grupo si es fase de grupos
           const groups = phase === 'GROUP'
@@ -189,21 +189,36 @@ function PredRow({ pred }: { pred: any }) {
   const homeLabel = m.homeTeam ? `${m.homeTeam.flag} ${m.homeTeam.name}` : (m.homeLabel ?? '?')
   const awayLabel = m.awayTeam ? `${m.awayTeam.flag} ${m.awayTeam.name}` : (m.awayLabel ?? '?')
 
+  const hasResult = played && m.homeScore != null && m.awayScore != null
+
   // Resultado predicho
   const predResult = pred.homeScore > pred.awayScore ? 'home'
     : pred.awayScore > pred.homeScore ? 'away' : 'draw'
   // Resultado real
-  const realResult = played && m.homeScore != null && m.awayScore != null
+  const realResult = hasResult
     ? (m.homeScore > m.awayScore ? 'home' : m.awayScore > m.homeScore ? 'away' : 'draw')
     : null
 
-  const resultOk = played && realResult !== null && predResult === realResult
+  const resultOk = hasResult && predResult === realResult
+  const exactOk  = hasResult && pred.homeScore === m.homeScore && pred.awayScore === m.awayScore
+
+  // Color del borde izquierdo según resultado
+  const borderColor = !played ? ''
+    : exactOk   ? 'border-l-4 border-l-yellow-400'
+    : resultOk  ? 'border-l-4 border-l-emerald-500'
+    : 'border-l-4 border-l-red-700'
+
+  // Color de fondo de los scores predichos
+  const scoreBoxClass = exactOk
+    ? 'bg-yellow-800/40 text-yellow-200'
+    : resultOk
+    ? 'bg-emerald-800/50 text-emerald-300'
+    : 'bg-slate-700 text-white'
 
   return (
-    <div className={`rounded-xl border p-3 transition-colors
-      ${!played ? 'bg-slate-900/40 border-slate-700/50'
-      : resultOk ? 'bg-emerald-950/20 border-emerald-800/50'
-      : 'bg-slate-900/40 border-slate-700/50'}`}>
+    <div className={`rounded-xl border border-slate-700/50 p-3 transition-colors
+      ${!played ? 'bg-slate-900/40' : exactOk ? 'bg-yellow-950/10' : resultOk ? 'bg-emerald-950/20' : 'bg-slate-900/40'}
+      ${borderColor}`}>
 
       <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
         <span>#{m.matchNumber}</span>
@@ -212,24 +227,21 @@ function PredRow({ pred }: { pred: any }) {
         {!played && <span className="text-amber-500 ml-auto">Sin jugar</span>}
         {played && (
           <span className="ml-auto font-bold text-sm">
-            <ResultBadge pts={pred.points} max={played ? 3 : 0} />
+            <ResultBadge pts={pred.points} max={4} />
           </span>
         )}
       </div>
 
-      {/* Teams + scores */}
+      {/* Equipos + marcador predicho */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="flex-1 text-right text-sm font-medium truncate">{homeLabel}</span>
 
-        {/* Prediccion */}
         <div className="flex items-center gap-1 shrink-0">
-          <div className={`w-9 h-9 flex items-center justify-center rounded-lg text-base font-bold
-            ${resultOk ? 'bg-emerald-800/50 text-emerald-300' : 'bg-slate-700 text-white'}`}>
+          <div className={`w-9 h-9 flex items-center justify-center rounded-lg text-base font-bold ${scoreBoxClass}`}>
             {pred.homeScore}
           </div>
-          <span className="text-slate-500 text-xs">vs</span>
-          <div className={`w-9 h-9 flex items-center justify-center rounded-lg text-base font-bold
-            ${resultOk ? 'bg-emerald-800/50 text-emerald-300' : 'bg-slate-700 text-white'}`}>
+          <span className="text-slate-500 text-xs">-</span>
+          <div className={`w-9 h-9 flex items-center justify-center rounded-lg text-base font-bold ${scoreBoxClass}`}>
             {pred.awayScore}
           </div>
         </div>
@@ -237,48 +249,29 @@ function PredRow({ pred }: { pred: any }) {
         <span className="flex-1 text-sm font-medium truncate">{awayLabel}</span>
 
         {/* Resultado real */}
-        {played && m.homeScore != null && (
+        {hasResult && (
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-slate-500 text-xs">Real:</span>
-            <span className={`font-bold text-sm ${resultOk ? 'text-emerald-400' : 'text-slate-300'}`}>
+            <span className={`font-bold text-sm ${exactOk ? 'text-yellow-400' : resultOk ? 'text-emerald-400' : 'text-slate-300'}`}>
               {m.homeScore}–{m.awayScore}
             </span>
-            {resultOk && <span className="text-emerald-400">✓</span>}
           </div>
         )}
       </div>
 
-      {/* Extras */}
-      {(pred.extraFirstHalfGoals != null || pred.extraCardsType) && (
-        <div className="mt-2 pt-2 border-t border-slate-700/50 flex flex-wrap gap-4 text-xs">
-          {pred.extraFirstHalfGoals != null && (
-            <div className="flex items-center gap-1">
-              <span className="text-slate-500">⚽ Goles 1°T:</span>
-              <span className="font-bold text-white">{pred.extraFirstHalfGoals}</span>
-              {played && m.firstHalfGoals != null && (
-                pred.extraFirstHalfGoals === m.firstHalfGoals
-                  ? <span className="text-emerald-400">✓ +0.5</span>
-                  : <span className="text-slate-500">(real: {m.firstHalfGoals})</span>
-              )}
-            </div>
-          )}
-          {pred.extraCardsType && pred.extraCardsValue != null && (
-            <div className="flex items-center gap-1">
-              <span className="text-slate-500">
-                {pred.extraCardsType === 'YELLOW' ? '🟨 Amarillas:' : '🟥 Rojas:'}
-              </span>
-              <span className="font-bold text-white">{pred.extraCardsValue}</span>
-              {played && (
-                (() => {
-                  const real = pred.extraCardsType === 'YELLOW' ? m.yellowCards : m.redCards
-                  return real != null
-                    ? (pred.extraCardsValue === real
-                        ? <span className="text-emerald-400">✓ +0.5</span>
-                        : <span className="text-slate-500">(real: {real})</span>)
-                    : null
-                })()
-              )}
-            </div>
+      {/* Indicadores resultado/exacto */}
+      {played && (
+        <div className="mt-2 pt-2 border-t border-slate-700/50 flex gap-4 text-xs">
+          <span className={resultOk ? 'text-emerald-400' : 'text-slate-600'}>
+            {resultOk ? '✓' : '✗'} Resultado
+          </span>
+          <span className={exactOk ? 'text-yellow-400' : 'text-slate-600'}>
+            {exactOk ? '✓' : '✗'} Marcador exacto
+          </span>
+          {pred.points > 0 && (
+            <span className={`ml-auto font-bold ${exactOk ? 'text-yellow-400' : 'text-emerald-400'}`}>
+              +{pred.points} pts {exactOk ? '🎯' : '✓'}
+            </span>
           )}
         </div>
       )}

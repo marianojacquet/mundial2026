@@ -181,7 +181,7 @@ export default async function Home() {
             {[
               { icon: '📝', step: '1', title: 'Te anotás',          desc: 'Creás tu cuenta gratis con email y contraseña.' },
               { icon: '✅', step: '2', title: 'Pedís tu planilla',   desc: 'Solicitás 1 o más planillas. Cada una es una chance más de ganar.' },
-              { icon: '⚽', step: '3', title: 'Completás el fixture', desc: 'Predecís los 104 partidos del Mundial y los extras.' },
+              { icon: '⚽', step: '3', title: 'Completás el fixture', desc: 'Predecís el resultado de los 104 partidos del Mundial.' },
               { icon: '🏆', step: '4', title: 'Ganás el pozo',       desc: 'Al terminar el Mundial, el que más puntos tenga se lleva todo.' },
             ].map(item => (
               <div key={item.step} className="card text-center hover:border-sky-600 transition-colors">
@@ -201,13 +201,12 @@ export default async function Home() {
         <section className="bg-slate-800/40 border-y border-slate-700/50 py-16">
           <div className="max-w-3xl mx-auto px-4">
             <h2 className="text-3xl font-extrabold text-center mb-2">Sistema de puntaje</h2>
-            <p className="text-slate-400 text-center mb-10">Cada partido vale puntos. Los extras te dan ventaja</p>
+            <p className="text-slate-400 text-center mb-10">Simple y claro — cada partido te da hasta 4 puntos</p>
             <div className="space-y-3">
               {[
-                { pts: '+2',   color: 'text-emerald-400', bg: 'bg-emerald-900/30 border-emerald-800', label: 'Resultado correcto',    sub: 'Adivinás si gana el local, hay empate o gana el visitante' },
-                { pts: '+0.5', color: 'text-sky-400',     bg: 'bg-sky-900/30 border-sky-800',         label: 'Goles en el 1° tiempo', sub: 'Extra opcional: cuántos goles se hacen en el primer tiempo' },
-                { pts: '+0.5', color: 'text-amber-400',   bg: 'bg-amber-900/30 border-amber-800',     label: 'Tarjetas acertadas',     sub: 'Extra opcional: cuántas tarjetas amarillas o rojas habrá' },
-                { pts: '0',    color: 'text-slate-500',   bg: 'bg-slate-800 border-slate-700',        label: 'Resultado incorrecto',   sub: 'Si te equivocás en el resultado no sumás puntos' },
+                { pts: '+2', color: 'text-emerald-400', bg: 'bg-emerald-900/30 border-emerald-800', label: 'Resultado correcto',  sub: 'Adivinás si gana el local, hay empate o gana el visitante' },
+                { pts: '+2', color: 'text-yellow-400',  bg: 'bg-yellow-900/30 border-yellow-800',   label: 'Marcador exacto',     sub: 'Además del resultado, acertás la cantidad exacta de goles de cada equipo' },
+                { pts: '0',  color: 'text-slate-500',   bg: 'bg-slate-800 border-slate-700',        label: 'Resultado incorrecto', sub: 'Si te equivocás en quién gana (o empata), no sumás puntos' },
               ].map(item => (
                 <div key={item.label} className={`flex items-center gap-5 rounded-xl p-4 border ${item.bg}`}>
                   <span className={`text-3xl font-black w-16 text-center shrink-0 ${item.color}`}>{item.pts}</span>
@@ -218,9 +217,11 @@ export default async function Home() {
                 </div>
               ))}
             </div>
-            <p className="text-center text-slate-500 text-sm mt-6">
-              Máximo posible: <span className="text-white font-semibold">312 puntos</span> con los 104 partidos perfectos
-            </p>
+            <div className="mt-6 flex items-center justify-center gap-6 text-sm text-slate-400">
+              <span>Máximo por partido: <strong className="text-white">4 pts</strong></span>
+              <span className="text-slate-600">·</span>
+              <span>Máximo total: <strong className="text-white">416 pts</strong> (104 partidos perfectos)</span>
+            </div>
           </div>
         </section>
 

@@ -175,7 +175,7 @@ Usá /yo para ver tus planillas o /ranking para el ranking general.`)
           break
         }
 
-        await sendMessage(chatId, `⚽ <b>Partido #${num} — Resultado</b>\n\n<b>${home} ${match.homeScore} — ${match.awayScore} ${away}</b>${match.firstHalfGoals != null ? `\n⏱ Goles 1°T: ${match.firstHalfGoals}` : ''}${match.yellowCards != null ? `\n🟨 Amarillas: ${match.yellowCards}` : ''}${match.redCards != null ? `\n🟥 Rojas: ${match.redCards}` : ''}`)
+        await sendMessage(chatId, `⚽ <b>Partido #${num} — Resultado</b>\n\n<b>${home} ${match.homeScore} — ${match.awayScore} ${away}</b>`)
         break
       }
 

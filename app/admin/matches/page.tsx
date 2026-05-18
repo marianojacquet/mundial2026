@@ -6,34 +6,29 @@ import { Spinner } from '@/components/ui/Spinner'
 import { formatDate, phaseLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
-type Team = { id: string; name: string; code: string; flag: string }
+type Team  = { id: string; name: string; code: string; flag: string }
 type Match = {
   id: string; matchNumber: number; phase: string; groupName: string | null
   homeTeam: Team | null; awayTeam: Team | null
   homeLabel: string | null; awayLabel: string | null
   scheduledAt: string; venue: string | null
   homeScore: number | null; awayScore: number | null
-  firstHalfGoals: number | null; yellowCards: number | null; redCards: number | null
   played: boolean
 }
-
-type ResultForm = {
-  homeScore: number; awayScore: number
-  firstHalfGoals: number; yellowCards: number; redCards: number
-}
+type ResultForm = { homeScore: number; awayScore: number }
 
 export default function AdminMatchesPage() {
-  const [matches, setMatches] = useState<Match[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activePhase, setActivePhase] = useState('GROUP')
-  const [editingMatch, setEditingMatch] = useState<Match | null>(null)
-  const [form, setForm] = useState<ResultForm>({ homeScore: 0, awayScore: 0, firstHalfGoals: 0, yellowCards: 0, redCards: 0 })
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [matches,         setMatches]         = useState<Match[]>([])
+  const [loading,         setLoading]         = useState(true)
+  const [activePhase,     setActivePhase]     = useState('GROUP')
+  const [editingMatch,    setEditingMatch]    = useState<Match | null>(null)
+  const [form,            setForm]            = useState<ResultForm>({ homeScore: 0, awayScore: 0 })
+  const [saving,          setSaving]          = useState(false)
+  const [msg,             setMsg]             = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [showOnlyPending, setShowOnlyPending] = useState(false)
 
   async function load() {
-    const res = await fetch('/api/matches')
+    const res  = await fetch('/api/matches')
     const data = await res.json()
     setMatches(data.matches ?? [])
     setLoading(false)
@@ -43,23 +38,18 @@ export default function AdminMatchesPage() {
 
   function openEdit(m: Match) {
     setEditingMatch(m)
-    setForm({
-      homeScore:      m.homeScore      ?? 0,
-      awayScore:      m.awayScore      ?? 0,
-      firstHalfGoals: m.firstHalfGoals ?? 0,
-      yellowCards:    m.yellowCards    ?? 0,
-      redCards:       m.redCards       ?? 0,
-    })
+    setForm({ homeScore: m.homeScore ?? 0, awayScore: m.awayScore ?? 0 })
+    setMsg(null)
   }
 
   async function saveResult() {
     if (!editingMatch) return
     setSaving(true)
     setMsg(null)
-    const res = await fetch(`/api/admin/matches/${editingMatch.id}`, {
-      method: 'PATCH',
+    const res  = await fetch(`/api/admin/matches/${editingMatch.id}`, {
+      method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body:    JSON.stringify(form),
     })
     const data = await res.json()
     setSaving(false)
@@ -69,7 +59,7 @@ export default function AdminMatchesPage() {
     load()
   }
 
-  const phases = ['GROUP', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'THIRD_PLACE', 'FINAL']
+  const phases      = ['GROUP', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'THIRD_PLACE', 'FINAL']
   const phaseMatches = matches.filter(m => m.phase === activePhase && (!showOnlyPending || !m.played))
 
   const homeLabel = (m: Match) => m.homeTeam ? `${m.homeTeam.flag} ${m.homeTeam.name}` : (m.homeLabel ?? '?')
@@ -95,7 +85,7 @@ export default function AdminMatchesPage() {
       {/* Tabs de fase */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {phases.map(ph => {
-          const count = matches.filter(m => m.phase === ph).length
+          const count  = matches.filter(m => m.phase === ph).length
           if (count === 0) return null
           const played = matches.filter(m => m.phase === ph && m.played).length
           return (
@@ -127,18 +117,14 @@ export default function AdminMatchesPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <span>{homeLabel(m)}</span>
-                  <span className={cn('px-2 py-0.5 rounded font-mono text-sm', m.played ? 'bg-emerald-900/50 text-emerald-300' : 'bg-slate-700 text-slate-300')}>
+                  <span className={cn(
+                    'px-2 py-0.5 rounded font-mono text-sm',
+                    m.played ? 'bg-emerald-900/50 text-emerald-300' : 'bg-slate-700 text-slate-300'
+                  )}>
                     {m.played ? `${m.homeScore} - ${m.awayScore}` : '? - ?'}
                   </span>
                   <span>{awayLabel(m)}</span>
                 </div>
-                {m.played && (
-                  <div className="text-xs text-slate-400 mt-1 flex gap-3">
-                    <span>⚽ 1°T: {m.firstHalfGoals}</span>
-                    <span>🟨 Amarillas: {m.yellowCards}</span>
-                    <span>🟥 Rojas: {m.redCards}</span>
-                  </div>
-                )}
               </div>
               <button onClick={() => openEdit(m)} className={m.played ? 'btn-secondary text-sm' : 'btn-primary text-sm'}>
                 {m.played ? '✏️ Editar' : '+ Cargar resultado'}
@@ -151,7 +137,7 @@ export default function AdminMatchesPage() {
       {/* Modal cargar resultado */}
       {editingMatch && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm">
             <h2 className="text-lg font-bold mb-1">Cargar resultado</h2>
             <p className="text-slate-400 text-sm mb-5">
               {homeLabel(editingMatch)} vs {awayLabel(editingMatch)}
@@ -159,49 +145,40 @@ export default function AdminMatchesPage() {
 
             {msg?.type === 'error' && <Alert type="error" className="mb-4">{msg.text}</Alert>}
 
-            <div className="space-y-4">
-              {/* Resultado final */}
-              <div>
-                <label className="label">Resultado final</label>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-400 mb-1 truncate">{homeLabel(editingMatch)}</p>
-                    <input type="number" min={0} max={30} className="input text-center text-2xl font-bold"
-                      value={form.homeScore} onChange={e => setForm(f => ({ ...f, homeScore: Number(e.target.value) }))} />
-                  </div>
-                  <span className="text-2xl text-slate-500 font-bold pt-5">-</span>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-400 mb-1 truncate">{awayLabel(editingMatch)}</p>
-                    <input type="number" min={0} max={30} className="input text-center text-2xl font-bold"
-                      value={form.awayScore} onChange={e => setForm(f => ({ ...f, awayScore: Number(e.target.value) }))} />
-                  </div>
-                </div>
+            {/* Resultado */}
+            <label className="label">Resultado final</label>
+            <div className="flex items-center gap-3 mt-1">
+              <div className="flex-1">
+                <p className="text-xs text-slate-400 mb-1 truncate">{homeLabel(editingMatch)}</p>
+                <input type="number" min={0} max={30}
+                  className="input text-center text-3xl font-bold py-3"
+                  value={form.homeScore}
+                  onChange={e => setForm(f => ({ ...f, homeScore: Number(e.target.value) }))}
+                />
               </div>
-
-              {/* Extras */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="label text-xs">Goles 1° tiempo</label>
-                  <input type="number" min={0} max={20} className="input text-center"
-                    value={form.firstHalfGoals} onChange={e => setForm(f => ({ ...f, firstHalfGoals: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="label text-xs">🟨 Amarillas</label>
-                  <input type="number" min={0} max={30} className="input text-center"
-                    value={form.yellowCards} onChange={e => setForm(f => ({ ...f, yellowCards: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="label text-xs">🟥 Rojas</label>
-                  <input type="number" min={0} max={20} className="input text-center"
-                    value={form.redCards} onChange={e => setForm(f => ({ ...f, redCards: Number(e.target.value) }))} />
-                </div>
+              <span className="text-3xl text-slate-500 font-black pt-5">—</span>
+              <div className="flex-1">
+                <p className="text-xs text-slate-400 mb-1 truncate">{awayLabel(editingMatch)}</p>
+                <input type="number" min={0} max={30}
+                  className="input text-center text-3xl font-bold py-3"
+                  value={form.awayScore}
+                  onChange={e => setForm(f => ({ ...f, awayScore: Number(e.target.value) }))}
+                />
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => { setEditingMatch(null); setMsg(null) }} className="btn-secondary flex-1">Cancelar</button>
+            <div className="bg-slate-900/50 rounded-lg p-3 mt-4 text-xs text-slate-400 text-center">
+              ⚽ Resultado correcto: <strong className="text-white">+2 pts</strong>
+              &nbsp;·&nbsp;
+              🎯 Marcador exacto: <strong className="text-white">+2 pts más</strong>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setEditingMatch(null); setMsg(null) }} className="btn-secondary flex-1">
+                Cancelar
+              </button>
               <button onClick={saveResult} disabled={saving} className="btn-primary flex-1">
-                {saving ? <Spinner /> : '💾 Guardar resultado'}
+                {saving ? <Spinner /> : '💾 Guardar'}
               </button>
             </div>
           </div>
