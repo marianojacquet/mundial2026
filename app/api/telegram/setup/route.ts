@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL
   if (!appUrl) return NextResponse.json({ error: 'NEXT_PUBLIC_APP_URL no configurado' }, { status: 500 })
 
-  const webhookUrl = `${appUrl}/api/telegram/webhook`
+  const webhookUrl = `${appUrl.replace(/\/+$/, '')}/api/telegram/webhook`
   const result = await setWebhook(webhookUrl)
 
   return NextResponse.json({ webhookUrl, result })

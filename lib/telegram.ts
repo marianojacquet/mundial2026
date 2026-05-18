@@ -1,5 +1,6 @@
-const TOKEN   = process.env.TELEGRAM_BOT_TOKEN ?? ''
-const API_URL = `https://api.telegram.org/bot${TOKEN}`
+const TOKEN    = process.env.TELEGRAM_BOT_TOKEN ?? ''
+const API_URL  = `https://api.telegram.org/bot${TOKEN}`
+const APP_BASE = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, '')
 
 // ─── Enviar mensaje ───────────────────────────────────────────────────────────
 
