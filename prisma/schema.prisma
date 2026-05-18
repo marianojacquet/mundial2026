@@ -14,18 +14,30 @@ datasource db {
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  phone     String?
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  phone          String?
+  password       String
+  role           Role     @default(USER)
+  telegramChatId String?  // ID de chat de Telegram vinculado
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  fixtureRequests FixtureRequest[]
-  fixtures        Fixture[]
+  fixtureRequests  FixtureRequest[]
+  fixtures         Fixture[]
   groupMemberships GroupMember[]
+  telegramTokens   TelegramLinkToken[]
+}
+
+// Token temporal para vincular cuenta de Telegram desde el dashboard
+model TelegramLinkToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // 6 dígitos que el usuario envía al bot
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 enum Role {

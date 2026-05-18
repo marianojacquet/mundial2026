@@ -18,10 +18,13 @@ type Fixture = {
 type RankingPos = { fixtureId: string; position: number; total: number }
 
 export default function DashboardPage() {
-  const [requests,    setRequests]    = useState<FixtureRequest[]>([])
-  const [fixtures,    setFixtures]    = useState<Fixture[]>([])
-  const [rankingPos,  setRankingPos]  = useState<RankingPos[]>([])
-  const [loading,     setLoading]     = useState(true)
+  const [requests,       setRequests]       = useState<FixtureRequest[]>([])
+  const [fixtures,       setFixtures]       = useState<Fixture[]>([])
+  const [rankingPos,     setRankingPos]     = useState<RankingPos[]>([])
+  const [telegramLinked, setTelegramLinked] = useState(false)
+  const [tgToken,        setTgToken]        = useState<string | null>(null)
+  const [tgLoading,      setTgLoading]      = useState(false)
+  const [loading,        setLoading]        = useState(true)
   const [reqModal, setReqModal] = useState(false)
   const [quantity, setQuantity] = useState(1)
   const [note, setNote] = useState('')
@@ -37,6 +40,7 @@ export default function DashboardPage() {
     ])
     const fData  = await fRes.json()
     setFixtures(fData.fixtures ?? [])
+    setTelegramLinked(fData.telegramLinked ?? false)
 
     if (rRes.ok) {
       const rData = await rRes.json()
@@ -66,6 +70,21 @@ export default function DashboardPage() {
     setReqModal(false)
     setQuantity(1)
     setNote('')
+    load()
+  }
+
+  async function generateTgToken() {
+    setTgLoading(true)
+    const res = await fetch('/api/telegram/link', { method: 'POST' })
+    const data = await res.json()
+    if (res.ok) setTgToken(data.token)
+    setTgLoading(false)
+  }
+
+  async function unlinkTelegram() {
+    await fetch('/api/telegram/link', { method: 'DELETE' })
+    setTelegramLinked(false)
+    setTgToken(null)
     load()
   }
 
@@ -145,6 +164,62 @@ export default function DashboardPage() {
                   })}
                 </div>
               )}
+            </section>
+
+            {/* Telegram */}
+            <section>
+              <h2 className="text-xl font-semibold mb-4">Bot de Telegram</h2>
+              <div className={`card border-2 ${telegramLinked ? 'border-sky-700/50' : 'border-slate-700'}`}>
+                <div className="flex items-start gap-4 flex-wrap">
+                  <div className="text-4xl">✈️</div>
+                  <div className="flex-1 min-w-0">
+                    {telegramLinked ? (
+                      <>
+                        <p className="font-semibold text-emerald-400">✅ Telegram vinculado</p>
+                        <p className="text-slate-400 text-sm mt-1">
+                          Podés consultar tu ranking y resultados desde el bot escribiendo <strong>/yo</strong> o <strong>/ranking</strong>.
+                        </p>
+                        <button onClick={unlinkTelegram} className="btn-secondary text-sm mt-3">
+                          Desvincular Telegram
+                        </button>
+                      </>
+                    ) : tgToken ? (
+                      <>
+                        <p className="font-semibold">Enviá este código al bot para vincular tu cuenta:</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <code className="text-2xl font-black tracking-[0.3em] text-sky-400 bg-slate-900 px-4 py-2 rounded-lg border border-slate-700">
+                            {tgToken}
+                          </code>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(`/vincular ${tgToken}`)}
+                            className="btn-secondary text-xs"
+                          >
+                            📋 Copiar
+                          </button>
+                        </div>
+                        <p className="text-slate-400 text-sm mt-2">
+                          1. Abrí Telegram y buscá <strong>@{process.env.NEXT_PUBLIC_BOT_USERNAME ?? 'el bot'}</strong><br />
+                          2. Enviá: <code className="text-sky-400">/vincular {tgToken}</code><br />
+                          3. ¡Listo! El código expira en 15 minutos.
+                        </p>
+                        <button onClick={() => setTgToken(null)} className="text-xs text-slate-500 hover:text-slate-400 mt-2">
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold">Conectá tu cuenta con Telegram</p>
+                        <p className="text-slate-400 text-sm mt-1">
+                          Consultá tu ranking, puntaje y resultados directo desde Telegram. Gratis, sin spam.
+                        </p>
+                        <button onClick={generateTgToken} disabled={tgLoading} className="btn-primary text-sm mt-3">
+                          {tgLoading ? 'Generando...' : '🔗 Vincular Telegram'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </section>
 
             {/* Solicitudes */}

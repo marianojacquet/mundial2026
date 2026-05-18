@@ -10,16 +10,22 @@ export async function GET(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const fixtures = await prisma.fixture.findMany({
-    where: { userId: session.sub },
-    include: {
-      _count: { select: { predictions: true } },
-      request: { select: { status: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const [fixtures, user] = await Promise.all([
+    prisma.fixture.findMany({
+      where: { userId: session.sub },
+      include: {
+        _count: { select: { predictions: true } },
+        request: { select: { status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.sub },
+      select: { telegramChatId: true },
+    }),
+  ])
 
-  return NextResponse.json({ fixtures })
+  return NextResponse.json({ fixtures, telegramLinked: !!user?.telegramChatId })
 }
 
 // POST /api/fixtures
